@@ -10,7 +10,7 @@ import {
 } from "react-bootstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import TableContainer from "../../Components/Common/TableContainer";
-import { Head, useForm, router } from "@inertiajs/react";
+import { Head, useForm, router, usePage } from "@inertiajs/react";
 import Layout from "../../Layouts";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -18,13 +18,16 @@ import moment from "moment";
 
 const PaymentsIndex = (props: any) => {
   const { payments, users, filters } = props;
+  const { auth } = usePage().props as any;
   const [modal, setModal] = useState<boolean>(false);
+  const [clientModal, setClientModal] = useState<boolean>(false);
 
   // Filter State
   const [filterState, setFilterState] = useState({
     from_user_id: filters?.from_user_id || "",
     to_user_id: filters?.to_user_id || "",
     by_user_id: filters?.by_user_id || "",
+    client_id: filters?.client_id || "",
     date_from: filters?.date_from || "",
     date_to: filters?.date_to || "",
   });
@@ -33,10 +36,25 @@ const PaymentsIndex = (props: any) => {
     date: moment().format("YYYY-MM-DD"),
     amount: "",
     from_user_id: "",
-    by_user_id: "",
+    by_user_id: auth.user.id,
     details: [
       { to_user_id: "", amount: "" }
     ],
+    description: "",
+    img: null,
+    source_allocation_id: "",
+  });
+
+  const clientPaymentForm = useForm({
+    date: moment().format("YYYY-MM-DD"),
+    amount: "",
+    from_user_id: "",
+    by_user_id: auth.user.id,
+    details: [
+      { to_user_id: 4, amount: "" }
+    ],
+    description: "",
+    img: null,
   });
 
   const handleFilterChange = (e: any) => {
@@ -52,6 +70,7 @@ const PaymentsIndex = (props: any) => {
       from_user_id: "",
       to_user_id: "",
       by_user_id: "",
+      client_id: "",
       date_from: "",
       date_to: "",
     };
@@ -68,12 +87,33 @@ const PaymentsIndex = (props: any) => {
     }
   }, [modal, reset]);
 
+  const toggleClientModal = useCallback(() => {
+    if (clientModal) {
+      setClientModal(false);
+      clientPaymentForm.reset();
+    } else {
+      setClientModal(true);
+    }
+  }, [clientModal, clientPaymentForm]);
+
   const handleSubmit = (e: any) => {
     e.preventDefault();
     post(route("payments.store"), {
       onSuccess: () => {
         setModal(false);
         toast.success("Payment processed successfully");
+      },
+    });
+  };
+
+  const handleClientPaymentSubmit = (e: any) => {
+    e.preventDefault();
+    
+    clientPaymentForm.post(route("payments.store"), {
+      onSuccess: () => {
+        setClientModal(false);
+        clientPaymentForm.reset();
+        toast.success("Client payment processed successfully");
       },
     });
   };
@@ -108,6 +148,12 @@ const PaymentsIndex = (props: any) => {
         enableColumnFilter: false,
       },
       {
+        header: "Client",
+        accessorKey: "client.name",
+        enableColumnFilter: false,
+        cell: (cell: any) => cell.getValue() || <span className="text-muted small italic">Auto/FIFO</span>,
+      },
+      {
         header: "Total Amount",
         accessorKey: "amount",
         enableColumnFilter: false,
@@ -134,6 +180,22 @@ const PaymentsIndex = (props: any) => {
             </div>
           );
         }
+      },
+      {
+        header: "Description",
+        accessorKey: "description",
+        enableColumnFilter: false,
+        cell: (cell: any) => <div className="text-truncate" style={{maxWidth: "150px"}} title={cell.getValue()}>{cell.getValue() || "—"}</div>,
+      },
+      {
+        header: "Attachment",
+        accessorKey: "img",
+        enableColumnFilter: false,
+        cell: (cell: any) => cell.getValue() ? (
+          <a href={cell.getValue()} target="_blank" rel="noreferrer">
+            <img src={cell.getValue()} alt="payment" className="rounded shadow-sm" style={{height: "30px", width: "30px", objectFit: "cover"}} />
+          </a>
+        ) : "—",
       }
     ],
     []
@@ -167,6 +229,16 @@ const PaymentsIndex = (props: any) => {
                         <Form.Label className="fw-semibold">To User (Recipient)</Form.Label>
                         <Form.Select name="to_user_id" value={filterState.to_user_id} onChange={handleFilterChange}>
                           <option value="">All Recipients</option>
+                          {users.map((u: any) => (
+                            <option key={u.id} value={u.id}>{u.name}</option>
+                          ))}
+                        </Form.Select>
+                      </Col>
+
+                      <Col xxl={2} sm={4}>
+                        <Form.Label className="fw-semibold">Client</Form.Label>
+                        <Form.Select name="client_id" value={filterState.client_id} onChange={handleFilterChange}>
+                          <option value="">All Clients</option>
                           {users.map((u: any) => (
                             <option key={u.id} value={u.id}>{u.name}</option>
                           ))}
@@ -214,6 +286,13 @@ const PaymentsIndex = (props: any) => {
                 <Card.Header className="d-flex align-items-center">
                   <h5 className="card-title mb-0 flex-grow-1">Transaction History</h5>
                   <div className="flex-shrink-0">
+                    <Button
+                      variant="info"
+                      className="me-2"
+                      onClick={toggleClientModal}
+                    >
+                      <i className="ri-user-received-line align-bottom me-1"></i> Client Payment
+                    </Button>
                     <Button
                       variant="success"
                       className="add-btn"
@@ -277,45 +356,87 @@ const PaymentsIndex = (props: any) => {
               </Row>
 
               <Row>
-                <Col md={6}>
+                <Col md={12}>
+                  <div className="mb-3">
+                    <Form.Label htmlFor="payment-description">Description</Form.Label>
+                    <Form.Control
+                      id="payment-description"
+                      as="textarea"
+                      rows={2}
+                      placeholder="Enter payment description..."
+                      value={data.description}
+                      onChange={(e) => setData("description", e.target.value)}
+                      isInvalid={!!errors.description}
+                    />
+                    <Form.Control.Feedback type="invalid">{errors.description}</Form.Control.Feedback>
+                  </div>
+                </Col>
+                <Col md={12}>
+                  <div className="mb-3">
+                    <Form.Label htmlFor="payment-img">Receipt/Attachment</Form.Label>
+                    <Form.Control
+                      id="payment-img"
+                      type="file"
+                      onChange={(e: any) => setData("img", e.target.files[0])}
+                      isInvalid={!!errors.img}
+                    />
+                    <Form.Control.Feedback type="invalid">{errors.img}</Form.Control.Feedback>
+                  </div>
+                </Col>
+              </Row>
+
+              <Row>
+                <Col md={12}>
                   <div className="mb-3">
                     <Form.Label htmlFor="from-user">From User (Payer)</Form.Label>
                     <Form.Select
                       id="from-user"
                       value={data.from_user_id}
-                      onChange={(e) => setData("from_user_id", e.target.value)}
+                      onChange={(e) => {
+                        setData((prev: any) => ({
+                          ...prev,
+                          from_user_id: e.target.value,
+                          source_allocation_id: "", // Reset source when payer changes
+                        }));
+                      }}
                       isInvalid={!!errors.from_user_id}
                     >
                       <option value="">Select Payer</option>
                       {users.map((u: any) => (
-                        <option key={u.id} value={u.id}>{u.name} (Balance: ${Number(u.balance).toFixed(2)})</option>
+                        <option key={u.id} value={u.id}>{u.name} (Total: ${Number(u.balance).toFixed(2)})</option>
                       ))}
                     </Form.Select>
-                    {data.from_user_id && (
-                      <div className="mt-1 text-muted fs-12">
-                        Available Balance: <span className="fw-medium text-info">${Number(users.find((u: any) => String(u.id) === String(data.from_user_id))?.balance || 0).toFixed(2)}</span>
-                      </div>
-                    )}
                     <Form.Control.Feedback type="invalid">{errors.from_user_id}</Form.Control.Feedback>
                   </div>
                 </Col>
-                <Col md={6}>
-                  <div className="mb-3">
-                    <Form.Label htmlFor="by-user">Recorded By</Form.Label>
-                    <Form.Select
-                      id="by-user"
-                      value={data.by_user_id}
-                      onChange={(e) => setData("by_user_id", e.target.value)}
-                      isInvalid={!!errors.by_user_id}
-                    >
-                      <option value="">Select User</option>
-                      {users.map((u: any) => (
-                        <option key={u.id} value={u.id}>{u.name}</option>
-                      ))}
-                    </Form.Select>
-                    <Form.Control.Feedback type="invalid">{errors.by_user_id}</Form.Control.Feedback>
-                  </div>
-                </Col>
+
+                {data.from_user_id && (
+                  <Col md={12}>
+                    <div className="mb-3 p-3 bg-light rounded border">
+                      <Form.Label className="fw-semibold text-primary">
+                        <i className="ri-database-2-line me-1"></i> Select Fund Source (Transaction)
+                      </Form.Label>
+                      <Form.Select
+                        value={data.source_allocation_id}
+                        onChange={(e) => setData("source_allocation_id", e.target.value)}
+                        isInvalid={!!errors.source_allocation_id}
+                      >
+                        <option value="">-- Select Transaction --</option>
+                        {(users.find((u: any) => String(u.id) === String(data.from_user_id))?.received_allocations || []).map((a: any) => (
+                          <option key={a.id} value={a.id}>
+                            {moment(a.payment?.date).format("DD MMM, YY")} - From: {a.payment?.from_user?.name} (Remaining: ${Number(a.remaining_balance).toFixed(2)} / Total: ${Number(a.amount).toFixed(2)})
+                          </option>
+                        ))}
+                      </Form.Select>
+                      <Form.Control.Feedback type="invalid">{errors.source_allocation_id}</Form.Control.Feedback>
+                      
+                      <div className="mt-2 fs-12 text-muted">
+                        <i className="ri-information-line me-1"></i>
+                        The selected transaction must have enough balance to cover the total amount.
+                      </div>
+                    </div>
+                  </Col>
+                )}
               </Row>
 
               <hr />
@@ -401,6 +522,98 @@ const PaymentsIndex = (props: any) => {
             </Modal.Footer>
           </Form>
         </Modal>
+
+        {/* Simplified Client Payment Modal */}
+        <Modal show={clientModal} onHide={toggleClientModal} centered>
+          <Modal.Header className="bg-light p-3" closeButton>
+            <h5 className="modal-title">Record Client Payment</h5>
+          </Modal.Header>
+          <Form onSubmit={handleClientPaymentSubmit}>
+            <Modal.Body>
+              <div className="mb-3">
+                <Form.Label htmlFor="client-payment-date">Date</Form.Label>
+                <Form.Control
+                  id="client-payment-date"
+                  type="date"
+                  value={clientPaymentForm.data.date}
+                  onChange={(e) => clientPaymentForm.setData("date", e.target.value)}
+                  isInvalid={!!clientPaymentForm.errors.date}
+                />
+                <Form.Control.Feedback type="invalid">{clientPaymentForm.errors.date}</Form.Control.Feedback>
+              </div>
+
+              <div className="mb-3">
+                <Form.Label htmlFor="client-from-user">Select Client</Form.Label>
+                <Form.Select
+                  id="client-from-user"
+                  value={clientPaymentForm.data.from_user_id}
+                  onChange={(e) => clientPaymentForm.setData("from_user_id", e.target.value)}
+                  isInvalid={!!clientPaymentForm.errors.from_user_id}
+                >
+                  <option value="">Select Client</option>
+                  {users.map((u: any) => (
+                    <option key={u.id} value={u.id}>{u.name} (Balance: ${Number(u.balance).toFixed(2)})</option>
+                  ))}
+                </Form.Select>
+                <Form.Control.Feedback type="invalid">{clientPaymentForm.errors.from_user_id}</Form.Control.Feedback>
+              </div>
+
+              <div className="mb-3">
+                <Form.Label htmlFor="client-amount">Amount</Form.Label>
+                <Form.Control
+                  id="client-amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={clientPaymentForm.data.amount}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    clientPaymentForm.setData((prev: any) => ({
+                      ...prev,
+                      amount: val,
+                      details: [{ ...prev.details[0], amount: val }]
+                    }));
+                  }}
+                  isInvalid={!!clientPaymentForm.errors.amount}
+                />
+                <Form.Control.Feedback type="invalid">{clientPaymentForm.errors.amount}</Form.Control.Feedback>
+              </div>
+
+              <div className="mb-3">
+                <Form.Label htmlFor="client-description">Description</Form.Label>
+                <Form.Control
+                  id="client-description"
+                  as="textarea"
+                  rows={2}
+                  placeholder="Payment notes..."
+                  value={clientPaymentForm.data.description}
+                  onChange={(e) => clientPaymentForm.setData("description", e.target.value)}
+                  isInvalid={!!clientPaymentForm.errors.description}
+                />
+              </div>
+
+              <div className="mb-3">
+                <Form.Label htmlFor="client-img">Attachment</Form.Label>
+                <Form.Control
+                  id="client-img"
+                  type="file"
+                  onChange={(e: any) => clientPaymentForm.setData("img", e.target.files[0])}
+                  isInvalid={!!clientPaymentForm.errors.img}
+                />
+              </div>
+              
+              <div className="bg-info-subtle p-2 rounded text-info fs-12">
+                <i className="ri-information-line me-1"></i>
+                This payment will be allocated to User ID 4 and recorded by you ({auth.user.name}).
+              </div>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="light" onClick={toggleClientModal}>Close</Button>
+              <Button variant="success" type="submit" disabled={clientPaymentForm.processing}>Save Payment</Button>
+            </Modal.Footer>
+          </Form>
+        </Modal>
+
         <ToastContainer closeButton={false} limit={1} />
       </div>
     </React.Fragment>

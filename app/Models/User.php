@@ -27,7 +27,6 @@ class User extends Authenticatable
         'type',
         'plan_id',
         'plan_added_date',
-        'balance',
     ];
 
     /**
@@ -79,5 +78,12 @@ class User extends Authenticatable
     public function receivedAllocations()
     {
         return $this->hasMany(PaymentDetail::class, 'to_user_id');
+    }
+
+    protected $appends = ['balance'];
+
+    public function getBalanceAttribute()
+    {
+        return $this->receivedAllocations()->sum('remaining_balance');
     }
 }

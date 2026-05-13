@@ -1,0 +1,1 @@
+import{o as e}from"./rolldown-runtime-BM3Ffeng.js";import{On as t}from"./app-ghBtHLVx.js";var n=e(t()),r=typeof global<`u`&&global.navigator&&global.navigator.product===`ReactNative`,i=typeof document<`u`||r?n.useLayoutEffect:n.useEffect;export{i as t};

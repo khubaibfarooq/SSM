@@ -1,0 +1,1 @@
+var e=`/build/assets/user-illustarator-2-C31JR4kY.png`;export{e as t};

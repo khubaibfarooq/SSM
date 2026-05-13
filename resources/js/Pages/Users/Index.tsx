@@ -24,6 +24,7 @@ const UsersIndex = (props: any) => {
   const [deleteModal, setDeleteModal] = useState<boolean>(false);
   const [paymentModal, setPaymentModal] = useState<boolean>(false);
   const [selectedUserPayments, setSelectedUserPayments] = useState<any[]>([]);
+  const [planModal, setPlanModal] = useState<boolean>(false);
 
   const emptyForm = {
     name: "",
@@ -36,10 +37,16 @@ const UsersIndex = (props: any) => {
     type: "client",
     plan_id: "",
     plan_added_date: "",
-    balance: "",
   };
 
   const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm(emptyForm);
+
+  const planForm = useForm({
+    plan_id: "",
+    amount: "",
+    description: "",
+    img: null,
+  });
 
   const toggle = useCallback(() => {
     if (modal) {
@@ -52,32 +59,21 @@ const UsersIndex = (props: any) => {
   }, [modal, reset]);
 
   const handleViewPayments = (user: any) => {
-    // 1. Payments MADE by this user (Outgoing)
-    const outgoing = (user.payments || []).map((p: any) => ({
-      id: p.id,
-      date: p.date,
-      totalAmount: p.amount,
-      type: "Outgoing",
-      party: "Multiple Allocations",
-      details: p.details || []
-    }));
+    setCurrentUser(user);
+    
+    // Show only Allocations RECEIVED by this user that still have a balance (Active Funds)
+    const activeFunds = (user.received_allocations || [])
+      .filter((a: any) => Number(a.remaining_balance) > 0)
+      .map((a: any) => ({
+        id: a.id,
+        date: a.payment?.date || a.created_at,
+        amount: a.amount,
+        remaining_balance: a.remaining_balance,
+        party: `From: ${a.payment?.from_user?.name || "System/Unknown"}`,
+      }))
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    // 2. Allocations RECEIVED by this user (Incoming)
-    const incoming = (user.received_allocations || []).map((a: any) => ({
-      id: `rec-${a.id}`,
-      date: a.payment?.date || a.created_at,
-      totalAmount: a.amount,
-      type: "Incoming",
-      party: `From: ${a.payment?.from_user?.name || "Unknown User"}`,
-      details: []
-    }));
-
-    // Merge and sort by date descending
-    const merged = [...outgoing, ...incoming].sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-
-    setSelectedUserPayments(merged);
+    setSelectedUserPayments(activeFunds);
     setPaymentModal(true);
   };
 
@@ -107,10 +103,38 @@ const UsersIndex = (props: any) => {
       type: user.type ?? "client",
       plan_id: user.plan_id ? String(user.plan_id) : "",
       plan_added_date: user.plan_added_date ?? "",
-      balance: user.balance ? String(user.balance) : "",
     });
     setIsEdit(true);
     setModal(true);
+  };
+
+  const handleAssignPlan = (user: any) => {
+    setCurrentUser(user);
+    planForm.setData({
+      plan_id: user.plan_id ? String(user.plan_id) : "",
+      amount: "",
+      description: "",
+      img: null,
+    });
+    setPlanModal(true);
+  };
+
+  const handlePlanChange = (planId: string) => {
+    planForm.setData("plan_id", planId);
+    const selectedPlan = plans.find((p: any) => String(p.id) === planId);
+    if (selectedPlan) {
+      planForm.setData("amount", selectedPlan.amount);
+    }
+  };
+
+  const handlePlanSubmit = (e: any) => {
+    e.preventDefault();
+    planForm.post(route("users.assign-plan", currentUser.id), {
+      onSuccess: () => {
+        setPlanModal(false);
+        toast.success("Plan assigned successfully");
+      },
+    });
   };
 
   const handleDeleteClick = (user: any) => {
@@ -182,6 +206,13 @@ const UsersIndex = (props: any) => {
                   <i className="ri-pencil-fill fs-16"></i>
                 </Button>
               </li>
+              {u.type === 'client' && (
+                <li className="list-inline-item">
+                  <Button variant="link" className="text-success d-inline-block p-0" onClick={() => handleAssignPlan(u)} title="Assign Plan">
+                    <i className="ri-medal-line fs-16"></i>
+                  </Button>
+                </li>
+              )}
               <li className="list-inline-item">
                 <Button variant="link" className="text-danger d-inline-block remove-item-btn p-0" onClick={() => handleDeleteClick(u)}>
                   <i className="ri-delete-bin-5-fill fs-16"></i>
@@ -229,58 +260,45 @@ const UsersIndex = (props: any) => {
           </Row>
         </Container>
 
-        {/* Payment History Modal */}
+        {/* Active Funds / Balance Modal */}
         <Modal show={paymentModal} onHide={() => setPaymentModal(false)} centered size="lg">
           <Modal.Header className="bg-light p-3" closeButton>
-            <h5 className="modal-title">Payment History</h5>
+            <h5 className="modal-title">Available Balance Details - {currentUser?.name}</h5>
           </Modal.Header>
           <Modal.Body>
+            <div className="d-flex align-items-center mb-4 p-3 bg-primary-subtle rounded">
+              <div className="flex-grow-1">
+                <h4 className="fs-14 mb-1">Total Available Balance</h4>
+                <h2 className="text-primary mb-0">${Number(currentUser?.balance || 0).toFixed(2)}</h2>
+              </div>
+              <div className="avatar-sm flex-shrink-0">
+                <span className="avatar-title bg-primary rounded-circle fs-3">
+                  <i className="ri-wallet-3-line"></i>
+                </span>
+              </div>
+            </div>
+
+            <h6 className="fs-13 mb-3 text-uppercase fw-semibold">Active Fund Sources</h6>
             {selectedUserPayments.length > 0 ? (
               <div className="table-responsive">
                 <table className="table table-bordered align-middle table-nowrap mb-0">
-                  <thead className="table-light">
+                  <thead className="table-light text-muted">
                     <tr>
                       <th scope="col">Date</th>
-                      <th scope="col">Type</th>
-                      <th scope="col">Amount</th>
-                      <th scope="col">Details / From</th>
-                      <th scope="col">Status</th>
+                      <th scope="col">Source</th>
+                      <th scope="col">Original Amount</th>
+                      <th scope="col">Remaining</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(selectedUserPayments || []).map((p: any, index: number) => (
+                    {selectedUserPayments.map((p: any, index: number) => (
                       <tr key={index}>
-                        <td>{p.date ? new Date(p.date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "—"}</td>
-                        <td>
-                          <span className={`badge ${p.type === "Incoming" ? "bg-success-subtle text-success" : "bg-warning-subtle text-warning"}`}>
-                            {p.type}
-                          </span>
+                        <td>{new Date(p.date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</td>
+                        <td><span className="text-muted">{p.party}</span></td>
+                        <td className="text-muted">${Number(p.amount).toFixed(2)}</td>
+                        <td className="fw-medium text-success">
+                          ${Number(p.remaining_balance).toFixed(2)}
                         </td>
-                        <td className={p.type === "Incoming" ? "text-success" : "text-danger"}>
-                          {p.type === "Incoming" ? "+" : "-"}${p.totalAmount ? Number(p.totalAmount).toFixed(2) : "0.00"}
-                        </td>
-                        <td>
-                          {p.type === "Incoming" ? (
-                            <span className="text-muted">{p.party}</span>
-                          ) : (
-                            <div>
-                              {p.details && p.details.length > 0 ? (
-                                <ul className="list-unstyled mb-0">
-                                  {p.details.map((detail: any, dIdx: number) => (
-                                    <li key={dIdx} className="fs-12 border-bottom border-light pb-1 mb-1 last-child-mb-0">
-                                      <i className="ri-user-received-line text-muted me-1"></i>
-                                      {detail.to_user?.name || `User #${detail.to_user_id}`}: 
-                                      <span className="text-primary ms-1">${Number(detail.amount).toFixed(2)}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                <span className="text-muted italic">No allocations</span>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                        <td><span className="badge bg-success">Paid</span></td>
                       </tr>
                     ))}
                   </tbody>
@@ -289,7 +307,7 @@ const UsersIndex = (props: any) => {
             ) : (
               <div className="text-center py-4">
                 <i className="ri-information-line text-info display-5"></i>
-                <p className="mt-2 text-muted">No payment history found for this user.</p>
+                <p className="mt-2 text-muted">No active fund sources found. Balance is $0.00.</p>
               </div>
             )}
           </Modal.Body>
@@ -394,14 +412,6 @@ const UsersIndex = (props: any) => {
                     value={data.plan_added_date} onChange={(e) => setData("plan_added_date", e.target.value)} isInvalid={!!errors.plan_added_date} />
                   <Form.Control.Feedback type="invalid">{errors.plan_added_date}</Form.Control.Feedback>
                 </Col>
-
-                {/* Balance */}
-                <Col md={4} className="mb-3">
-                  <Form.Label htmlFor="u-balance">Balance ($)</Form.Label>
-                  <Form.Control id="u-balance" type="number" step="0.01" placeholder="0.00"
-                    value={data.balance} onChange={(e) => setData("balance", e.target.value)} isInvalid={!!errors.balance} />
-                  <Form.Control.Feedback type="invalid">{errors.balance}</Form.Control.Feedback>
-                </Col>
               </Row>
             </Modal.Body>
             <Modal.Footer>
@@ -409,6 +419,78 @@ const UsersIndex = (props: any) => {
               <Button variant="success" type="submit" disabled={processing}>
                 {isEdit ? "Update User" : "Create User"}
               </Button>
+            </Modal.Footer>
+          </Form>
+        </Modal>
+
+        {/* Assign Plan Modal */}
+        <Modal show={planModal} onHide={() => setPlanModal(false)} centered>
+          <Modal.Header className="bg-light p-3" closeButton>
+            <h5 className="modal-title">Assign Plan to {currentUser?.name}</h5>
+          </Modal.Header>
+          <Form onSubmit={handlePlanSubmit}>
+            <Modal.Body>
+              <div className="mb-3">
+                <Form.Label htmlFor="assign-plan-id">Select Plan</Form.Label>
+                <Form.Select
+                  id="assign-plan-id"
+                  value={planForm.data.plan_id}
+                  onChange={(e) => handlePlanChange(e.target.value)}
+                  isInvalid={!!planForm.errors.plan_id}
+                >
+                  <option value="">Select a Plan</option>
+                  {plans.map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.name} (${Number(p.amount).toFixed(2)})</option>
+                  ))}
+                </Form.Select>
+                <Form.Control.Feedback type="invalid">{planForm.errors.plan_id}</Form.Control.Feedback>
+              </div>
+
+              <div className="mb-3">
+                <Form.Label htmlFor="assign-plan-amount">Plan Amount ($)</Form.Label>
+                <Form.Control
+                  id="assign-plan-amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={planForm.data.amount}
+                  onChange={(e) => planForm.setData("amount", e.target.value)}
+                  isInvalid={!!planForm.errors.amount}
+                />
+                <Form.Control.Feedback type="invalid">{planForm.errors.amount}</Form.Control.Feedback>
+              </div>
+
+              <div className="mb-3">
+                <Form.Label htmlFor="assign-plan-description">Description</Form.Label>
+                <Form.Control
+                  id="assign-plan-description"
+                  as="textarea"
+                  rows={2}
+                  placeholder="Plan details..."
+                  value={planForm.data.description}
+                  onChange={(e) => planForm.setData("description", e.target.value)}
+                  isInvalid={!!planForm.errors.description}
+                />
+              </div>
+
+              <div className="mb-3">
+                <Form.Label htmlFor="assign-plan-img">Attachment</Form.Label>
+                <Form.Control
+                  id="assign-plan-img"
+                  type="file"
+                  onChange={(e: any) => planForm.setData("img", e.target.files[0])}
+                  isInvalid={!!planForm.errors.img}
+                />
+              </div>
+
+              <div className="bg-info-subtle p-2 rounded text-info fs-12">
+                <i className="ri-information-line me-1"></i>
+                Saving this will update the client's plan and record a payment transaction.
+              </div>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="light" onClick={() => setPlanModal(false)}>Close</Button>
+              <Button variant="success" type="submit" disabled={planForm.processing}>Save & Process Payment</Button>
             </Modal.Footer>
           </Form>
         </Modal>

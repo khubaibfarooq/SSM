@@ -1,0 +1,1 @@
+import{o as e}from"./rolldown-runtime-BM3Ffeng.js";import{On as t}from"./app-ghBtHLVx.js";var n=e(t());function r(e,t){let r=0;return n.Children.map(e,e=>n.isValidElement(e)?t(e,r++):e)}function i(e,t){let r=0;n.Children.forEach(e,e=>{n.isValidElement(e)&&t(e,r++)})}function a(e,t){return n.Children.toArray(e).some(e=>n.isValidElement(e)&&e.type===t)}export{a as n,r,i as t};

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Plan;
 use App\Models\User;
+use App\Models\Payment;
+use App\Models\PaymentDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -33,7 +35,6 @@ class UserController extends Controller
             'type'            => 'nullable|in:admin,client,staff',
             'plan_id'         => 'nullable|exists:plans,id',
             'plan_added_date' => 'nullable|date',
-            'balance'         => 'nullable|numeric|min:0',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
@@ -54,7 +55,6 @@ class UserController extends Controller
             'type'            => 'nullable|in:admin,client,staff',
             'plan_id'         => 'nullable|exists:plans,id',
             'plan_added_date' => 'nullable|date',
-            'balance'         => 'nullable|numeric|min:0',
         ]);
 
         $user->update($validated);
@@ -74,5 +74,53 @@ class UserController extends Controller
         $user->delete();
 
         return back()->with('success', 'User deleted successfully.');
+    }
+
+    public function assignPlan(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'plan_id' => 'required|exists:plans,id',
+            'amount' => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+            'img' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        \DB::transaction(function () use ($validated, $user) {
+            // 1. Update User Plan
+            $user->update([
+                'plan_id' => $validated['plan_id'],
+                'plan_added_date' => now(),
+            ]);
+
+            // 2. Create Payment Transaction
+            $imgPath = null;
+            if ($request->hasFile('img')) {
+                $file = $request->file('img');
+                $filename = time() . '_' . $file->getClientOriginalName();
+                $file->move(public_path('uploads/payments'), $filename);
+                $imgPath = '/uploads/payments/' . $filename;
+            }
+
+            $payment = Payment::create([
+                'date' => now(),
+                'amount' => $validated['amount'],
+                'from_user_id' => 4, // Company/Main Account pays
+                'by_user_id' => auth()->id(),
+                'description' => $validated['description'] ?? null,
+                'img' => $imgPath,
+            ]);
+
+            // 3. Create Payment Detail (Allocated to the client)
+            $payment->details()->create([
+                'to_user_id' => $user->id, // Client receives the credit
+                'amount' => $validated['amount'],
+                'remaining_balance' => $validated['amount'],
+            ]);
+
+            // Note: The company (4) is paying the client ($user->id) for the plan amount.
+            // This increases the client's dynamic balance.
+        });
+
+        return back()->with('success', 'Plan assigned and payment recorded successfully.');
     }
 }

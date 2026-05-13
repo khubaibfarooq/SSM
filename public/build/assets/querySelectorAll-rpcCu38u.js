@@ -1,0 +1,1 @@
+var e=Function.prototype.bind.call(Function.prototype.call,[].slice);function t(t,n){return e(t.querySelectorAll(n))}export{t};

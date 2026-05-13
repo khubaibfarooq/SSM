@@ -45,6 +45,7 @@ Route::middleware('auth')->group(function () {
 
     // Software Sale Management Routes
     Route::resource('plans', PlanController::class);
+    Route::post('users/{user}/assign-plan', [UserController::class, 'assignPlan'])->name('users.assign-plan');
     Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::get('followups', [FollowupController::class, 'index'])->name('followups.index');
     Route::post('followups', [FollowupController::class, 'store'])->name('followups.store');

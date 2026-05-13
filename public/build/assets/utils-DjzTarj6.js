@@ -1,0 +1,1 @@
+import"./rolldown-runtime-BM3Ffeng.js";import{On as e}from"./app-ghBtHLVx.js";e();function t(e){return e.code===`Escape`||e.keyCode===27}function n(){let e=`19.1.0`.split(`.`);return{major:+e[0],minor:+e[1],patch:+e[2]}}function r(e){if(!e||typeof e==`function`)return null;let{major:t}=n();return t>=19?e.props.ref:e.ref}export{t as n,r as t};
