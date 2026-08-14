@@ -17,7 +17,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const UsersIndex = (props: any) => {
-  const { users, plans } = props;
+  const { users, plans, products, roles, zones } = props;
   const [modal, setModal] = useState<boolean>(false);
   const [isEdit, setIsEdit] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -34,14 +34,18 @@ const UsersIndex = (props: any) => {
     contact: "",
     address: "",
     business_name: "",
-    type: "client",
+    role: "",
+    product_id: "",
     plan_id: "",
     plan_added_date: "",
+    zone_id: "",
+    area_id: "",
   };
 
   const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm(emptyForm);
 
   const planForm = useForm({
+    product_id: "",
     plan_id: "",
     amount: "",
     description: "",
@@ -92,6 +96,17 @@ const UsersIndex = (props: any) => {
 
   const handleEdit = (user: any) => {
     setCurrentUser(user);
+    const userAreaId = user.area_id;
+    let userZoneId = "";
+    if (userAreaId) {
+        for (const z of (zones || [])) {
+            if (z.areas.some((a: any) => a.id === userAreaId)) {
+                userZoneId = z.id;
+                break;
+            }
+        }
+    }
+
     setData({
       name: user.name ?? "",
       email: user.email ?? "",
@@ -100,9 +115,12 @@ const UsersIndex = (props: any) => {
       contact: user.contact ?? "",
       address: user.address ?? "",
       business_name: user.business_name ?? "",
-      type: user.type ?? "client",
+      role: user.roles && user.roles.length > 0 ? user.roles[0].name : "",
+      product_id: user.product_id ? String(user.product_id) : "",
       plan_id: user.plan_id ? String(user.plan_id) : "",
       plan_added_date: user.plan_added_date ?? "",
+      zone_id: userZoneId ? String(userZoneId) : "",
+      area_id: userAreaId ? String(userAreaId) : "",
     });
     setIsEdit(true);
     setModal(true);
@@ -111,10 +129,11 @@ const UsersIndex = (props: any) => {
   const handleAssignPlan = (user: any) => {
     setCurrentUser(user);
     planForm.setData({
+      product_id: user.product_id ? String(user.product_id) : "",
       plan_id: user.plan_id ? String(user.plan_id) : "",
       amount: "",
       description: "",
-      img: null,
+      img: null as any,
     });
     setPlanModal(true);
   };
@@ -161,14 +180,25 @@ const UsersIndex = (props: any) => {
       { header: "Contact",       accessorKey: "contact",       enableColumnFilter: false, cell: (c: any) => c.getValue() || "—" },
       { header: "Business",      accessorKey: "business_name", enableColumnFilter: false, cell: (c: any) => c.getValue() || "—" },
       {
-        header: "Type",
-        accessorKey: "type",
+        header: "Role",
+        accessorKey: "role",
         enableColumnFilter: false,
-        cell: (c: any) => (
-          <span className={`badge text-uppercase ${typeBadge[c.getValue()] ?? "bg-secondary-subtle text-secondary"}`}>
-            {c.getValue() ?? "—"}
-          </span>
-        ),
+        cell: (c: any) => {
+          const u = c.row.original;
+          return u.roles && u.roles.length > 0 ? (
+            <span className="badge text-uppercase bg-info-subtle text-info">
+              {u.roles[0].name}
+            </span>
+          ) : (
+            <span className="badge bg-secondary-subtle text-secondary">—</span>
+          );
+        },
+      },
+      {
+        header: "Product",
+        accessorKey: "product",
+        enableColumnFilter: false,
+        cell: (c: any) => c.getValue()?.name ?? "—",
       },
       {
         header: "Plan",
@@ -188,7 +218,7 @@ const UsersIndex = (props: any) => {
         header: "Balance",
         accessorKey: "balance",
         enableColumnFilter: false,
-        cell: (c: any) => c.getValue() != null ? `$${Number(c.getValue()).toFixed(2)}` : "—",
+        cell: (c: any) => c.getValue() != null ? `Rs. ${Number(c.getValue()).toFixed(2)}` : "—",
       },
       {
         header: "Action",
@@ -206,7 +236,7 @@ const UsersIndex = (props: any) => {
                   <i className="ri-pencil-fill fs-16"></i>
                 </Button>
               </li>
-              {u.type === 'client' && (
+              {(u.roles && u.roles.length > 0 && u.roles[0].name === 'client' || (!u.roles || u.roles.length === 0)) && (
                 <li className="list-inline-item">
                   <Button variant="link" className="text-success d-inline-block p-0" onClick={() => handleAssignPlan(u)} title="Assign Plan">
                     <i className="ri-medal-line fs-16"></i>
@@ -269,7 +299,7 @@ const UsersIndex = (props: any) => {
             <div className="d-flex align-items-center mb-4 p-3 bg-primary-subtle rounded">
               <div className="flex-grow-1">
                 <h4 className="fs-14 mb-1">Total Available Balance</h4>
-                <h2 className="text-primary mb-0">${Number(currentUser?.balance || 0).toFixed(2)}</h2>
+                <h2 className="text-primary mb-0">Rs. {Number(currentUser?.balance || 0).toFixed(2)}</h2>
               </div>
               <div className="avatar-sm flex-shrink-0">
                 <span className="avatar-title bg-primary rounded-circle fs-3">
@@ -295,9 +325,9 @@ const UsersIndex = (props: any) => {
                       <tr key={index}>
                         <td>{new Date(p.date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</td>
                         <td><span className="text-muted">{p.party}</span></td>
-                        <td className="text-muted">${Number(p.amount).toFixed(2)}</td>
+                        <td className="text-muted">Rs. {Number(p.amount).toFixed(2)}</td>
                         <td className="fw-medium text-success">
-                          ${Number(p.remaining_balance).toFixed(2)}
+                          Rs. {Number(p.remaining_balance).toFixed(2)}
                         </td>
                       </tr>
                     ))}
@@ -307,7 +337,7 @@ const UsersIndex = (props: any) => {
             ) : (
               <div className="text-center py-4">
                 <i className="ri-information-line text-info display-5"></i>
-                <p className="mt-2 text-muted">No active fund sources found. Balance is $0.00.</p>
+                <p className="mt-2 text-muted">No active fund sources found. Balance is Rs. 0.00.</p>
               </div>
             )}
           </Modal.Body>
@@ -382,23 +412,36 @@ const UsersIndex = (props: any) => {
                   <Form.Control.Feedback type="invalid">{errors.address}</Form.Control.Feedback>
                 </Col>
 
-                {/* Type */}
+                {/* Role */}
                 <Col md={4} className="mb-3">
-                  <Form.Label htmlFor="u-type">User Type</Form.Label>
-                  <Form.Select id="u-type" value={data.type} onChange={(e) => setData("type", e.target.value)} isInvalid={!!errors.type}>
-                    <option value="client">Client</option>
-                    <option value="staff">Staff</option>
-                    <option value="admin">Admin</option>
+                  <Form.Label htmlFor="u-role">Role <span className="text-danger">*</span></Form.Label>
+                  <Form.Select id="u-role" value={data.role} onChange={(e) => setData("role", e.target.value)} isInvalid={!!errors.role}>
+                    <option value="">— Select Role —</option>
+                    {(roles || []).map((r: any) => (
+                      <option key={r.id} value={r.name}>{r.name}</option>
+                    ))}
                   </Form.Select>
-                  <Form.Control.Feedback type="invalid">{errors.type}</Form.Control.Feedback>
+                  <Form.Control.Feedback type="invalid">{errors.role}</Form.Control.Feedback>
+                </Col>
+
+                {/* Product */}
+                <Col md={4} className="mb-3">
+                  <Form.Label htmlFor="u-product">Product</Form.Label>
+                  <Form.Select id="u-product" value={data.product_id} onChange={(e) => { setData("product_id", e.target.value); setData("plan_id", ""); }} isInvalid={!!errors.product_id}>
+                    <option value="">— No Product —</option>
+                    {(products || []).map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </Form.Select>
+                  <Form.Control.Feedback type="invalid">{errors.product_id}</Form.Control.Feedback>
                 </Col>
 
                 {/* Plan */}
                 <Col md={4} className="mb-3">
                   <Form.Label htmlFor="u-plan">Subscription Plan</Form.Label>
-                  <Form.Select id="u-plan" value={data.plan_id} onChange={(e) => setData("plan_id", e.target.value)} isInvalid={!!errors.plan_id}>
+                  <Form.Select id="u-plan" value={data.plan_id} onChange={(e) => setData("plan_id", e.target.value)} isInvalid={!!errors.plan_id} disabled={!data.product_id}>
                     <option value="">— No Plan —</option>
-                    {(plans || []).map((p: any) => (
+                    {data.product_id && (plans || []).filter((p: any) => String(p.product_id) === String(data.product_id)).map((p: any) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </Form.Select>
@@ -411,6 +454,25 @@ const UsersIndex = (props: any) => {
                   <Form.Control id="u-plan-date" type="date"
                     value={data.plan_added_date} onChange={(e) => setData("plan_added_date", e.target.value)} isInvalid={!!errors.plan_added_date} />
                   <Form.Control.Feedback type="invalid">{errors.plan_added_date}</Form.Control.Feedback>
+                </Col>
+
+                {/* Zone */}
+                <Col md={6} className="mb-3">
+                  <Form.Label>Zone</Form.Label>
+                  <Form.Select value={data.zone_id} onChange={(e) => { setData("zone_id", e.target.value); setData("area_id", ""); }} isInvalid={!!(errors as any).zone_id}>
+                      <option value="">— Select Zone —</option>
+                      {(zones || []).map((z: any) => <option key={z.id} value={z.id}>{z.name}</option>)}
+                  </Form.Select>
+                </Col>
+
+                {/* Area */}
+                <Col md={6} className="mb-3">
+                  <Form.Label>Area</Form.Label>
+                  <Form.Select value={data.area_id} onChange={(e) => setData("area_id", e.target.value)} isInvalid={!!(errors as any).area_id} disabled={!data.zone_id}>
+                      <option value="">— Select Area —</option>
+                      {data.zone_id && (zones || []).find((z: any) => String(z.id) === String(data.zone_id))?.areas?.map((a: any) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </Form.Select>
+                  <Form.Control.Feedback type="invalid">{(errors as any).area_id}</Form.Control.Feedback>
                 </Col>
               </Row>
             </Modal.Body>
@@ -431,23 +493,40 @@ const UsersIndex = (props: any) => {
           <Form onSubmit={handlePlanSubmit}>
             <Modal.Body>
               <div className="mb-3">
+                <Form.Label htmlFor="assign-product-id">Select Product</Form.Label>
+                <Form.Select
+                  id="assign-product-id"
+                  value={planForm.data.product_id}
+                  onChange={(e) => { planForm.setData("product_id", e.target.value); planForm.setData("plan_id", ""); planForm.setData("amount", ""); }}
+                  isInvalid={!!planForm.errors.product_id}
+                >
+                  <option value="">Select a Product</option>
+                  {(products || []).map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </Form.Select>
+                <Form.Control.Feedback type="invalid">{planForm.errors.product_id}</Form.Control.Feedback>
+              </div>
+
+              <div className="mb-3">
                 <Form.Label htmlFor="assign-plan-id">Select Plan</Form.Label>
                 <Form.Select
                   id="assign-plan-id"
                   value={planForm.data.plan_id}
                   onChange={(e) => handlePlanChange(e.target.value)}
                   isInvalid={!!planForm.errors.plan_id}
+                  disabled={!planForm.data.product_id}
                 >
                   <option value="">Select a Plan</option>
-                  {plans.map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.name} (${Number(p.amount).toFixed(2)})</option>
+                  {planForm.data.product_id && (plans || []).filter((p: any) => String(p.product_id) === String(planForm.data.product_id)).map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.name} (Rs. {Number(p.amount).toFixed(2)})</option>
                   ))}
                 </Form.Select>
                 <Form.Control.Feedback type="invalid">{planForm.errors.plan_id}</Form.Control.Feedback>
               </div>
 
               <div className="mb-3">
-                <Form.Label htmlFor="assign-plan-amount">Plan Amount ($)</Form.Label>
+                <Form.Label htmlFor="assign-plan-amount">Plan Amount (Rs.)</Form.Label>
                 <Form.Control
                   id="assign-plan-amount"
                   type="number"

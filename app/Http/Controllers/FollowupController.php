@@ -13,8 +13,8 @@ class FollowupController extends Controller
     {
         return Inertia::render('Followups/Index', [
             'followups' => Followup::with(['client', 'staff'])->latest()->get(),
-            'clients' => User::where('type', 'client')->get(),
-            'staff' => User::where('type', 'staff')->get(),
+            'clients' => User::role(['Client', 'client'])->get(),
+            'staff' => User::role(['Staff', 'staff', 'Manager', 'manager', 'admin', 'superadmin'])->get(),
         ]);
     }
 

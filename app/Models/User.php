@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -27,6 +28,8 @@ class User extends Authenticatable
         'type',
         'plan_id',
         'plan_added_date',
+        'area_id',
+        'product_id',
     ];
 
     /**
@@ -53,6 +56,16 @@ class User extends Authenticatable
     public function plan()
     {
         return $this->belongsTo(Plan::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    public function area()
+    {
+        return $this->belongsTo(Area::class);
     }
 
     public function followups()

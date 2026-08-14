@@ -15,7 +15,8 @@ class PlanController extends Controller
     public function index()
     {
         return Inertia::render('Plans/Index', [
-            'plans' => Plan::all()
+            'plans' => Plan::with('product')->get(),
+            'products' => \App\Models\Product::all()
         ]);
     }
 
@@ -25,6 +26,7 @@ class PlanController extends Controller
             'name' => 'required|string|max:255',
             'type' => 'required|in:lifetime,yearly,monthly',
             'amount' => 'required|numeric|min:0',
+            'product_id' => 'required|exists:products,id',
         ]);
 
         Plan::create($validated);
@@ -38,6 +40,7 @@ class PlanController extends Controller
             'name' => 'required|string|max:255',
             'type' => 'required|in:lifetime,yearly,monthly',
             'amount' => 'required|numeric|min:0',
+            'product_id' => 'required|exists:products,id',
         ]);
 
         $plan->update($validated);

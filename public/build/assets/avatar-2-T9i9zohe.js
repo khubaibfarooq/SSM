@@ -1,1 +1,0 @@
-var e=`/build/assets/avatar-2-BXoVZ3ix.jpg`;export{e as t};

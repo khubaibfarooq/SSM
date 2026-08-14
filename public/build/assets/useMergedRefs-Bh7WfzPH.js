@@ -1,1 +1,0 @@
-import{o as e}from"./rolldown-runtime-BM3Ffeng.js";import{On as t}from"./app-ghBtHLVx.js";var n=e(t()),r=e=>!e||typeof e==`function`?e:t=>{e.current=t};function i(e,t){let n=r(e),i=r(t);return e=>{n&&n(e),i&&i(e)}}function a(e,t){return(0,n.useMemo)(()=>i(e,t),[e,t])}export{a as t};

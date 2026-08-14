@@ -1,1 +1,0 @@
-var e=`data-rr-ui-`,t=`rrUi`;function n(t){return`${e}${t}`}function r(e){return`${t}${e}`}export{r as n,n as t};

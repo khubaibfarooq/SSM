@@ -2,7 +2,7 @@ import React from "react";
 import ReactApexChart from "@/Components/Common/ReactApexChart";
 import getChartColorsArray from "../../Components/Common/ChartsDynamicColor";
 
-const RevenueCharts = ({ dataColors, series } : any) => {
+const RevenueCharts = ({ dataColors, series, categories } : any) => {
   var linechartcustomerColors = getChartColorsArray(dataColors);
 
   var options :any= {
@@ -29,7 +29,7 @@ const RevenueCharts = ({ dataColors, series } : any) => {
       },
     },
     xaxis: {
-      categories: [
+      categories: categories || [
         "Jan",
         "Feb",
         "Mar",

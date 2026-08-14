@@ -1,12 +1,18 @@
 <?php
 
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ClientController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\VelzonRoutesController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\FollowupController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\LocationController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 /*
@@ -43,13 +49,32 @@ Route::middleware('auth')->group(function () {
     Route::post("order-delete", [OrderController::class, 'destroy'])->name('order-delete');
 
     // Software Sale Management Routes
+    Route::resource('products', \App\Http\Controllers\ProductController::class);
     Route::resource('plans', PlanController::class);
     Route::post('users/{user}/assign-plan', [UserController::class, 'assignPlan'])->name('users.assign-plan');
     Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::post('clients/{client}/assign-plan', [ClientController::class, 'assignPlan'])->name('clients.assign-plan');
+    Route::resource('clients', ClientController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::get('followups', [FollowupController::class, 'index'])->name('followups.index');
     Route::post('followups', [FollowupController::class, 'store'])->name('followups.store');
     Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::post('payments', [PaymentController::class, 'store'])->name('payments.store');
+    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::resource('tasks', TaskController::class)->only(['index', 'store']);
+    Route::patch('tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.updateStatus');
+    
+    // Roles & Permissions
+    Route::resource('roles', RoleController::class);
+    Route::resource('permissions', PermissionController::class)->only(['index', 'store', 'update', 'destroy']);
+
+    // Locations (Zones & Areas)
+    Route::get('locations', [LocationController::class, 'index'])->name('locations.index');
+    Route::post('zones', [LocationController::class, 'storeZone'])->name('zones.store');
+    Route::put('zones/{zone}', [LocationController::class, 'updateZone'])->name('zones.update');
+    Route::delete('zones/{zone}', [LocationController::class, 'destroyZone'])->name('zones.destroy');
+    Route::post('areas', [LocationController::class, 'storeArea'])->name('areas.store');
+    Route::put('areas/{area}', [LocationController::class, 'updateArea'])->name('areas.update');
+    Route::delete('areas/{area}', [LocationController::class, 'destroyArea'])->name('areas.destroy');
 
 
     Route::controller(VelzonRoutesController::class)->group(function () {

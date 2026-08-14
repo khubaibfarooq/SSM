@@ -6,14 +6,14 @@ import Layout from '../../Layouts';
 import Widgets from './Widgets';
 import Section from './Section';
 import Revenue from './Revenue';
-import SalesByLocations from './SalesByLocations';
-import BestSellingProducts from './BestSellingProducts';
-import TopSellers from './TopSellers';
+import SalesByZones from './SalesByZones';
+import TopStaff from './TopStaff';
+import TopClients from './TopClients';
 import StoreVisits from './StoreVisits';
 import RecentOrders from './RecentOrders';
 import RecentActivity from './RecentActivity';
 
-export default function Dashboard() {
+export default function Dashboard({ total_revenue, total_clients, total_followups, total_payments, recent_activities, chart_data, filters, is_admin, top_staff, top_clients, sales_by_zones, zones }: any) {
 
   const [rightColumn, setRightColumn] = useState<boolean>(false);
   const toggleRightColumn = () => {
@@ -28,27 +28,34 @@ export default function Dashboard() {
           <Row>
             <Col>
               <div className="h-100">
-                <Section rightClickBtn={toggleRightColumn} />
+                <Section rightClickBtn={toggleRightColumn} filters={filters} zones={zones} />
                 <Row>
-                  <Widgets />
+                  <Widgets 
+                    totalRevenue={total_revenue} 
+                    totalClients={total_clients} 
+                    totalFollowups={total_followups} 
+                    totalPayments={total_payments} 
+                  />
                 </Row>
                 <Row>
                   <Col xl={8}>
-                    <Revenue />
+                    <Revenue chartData={chart_data} />
                   </Col>
-                  <SalesByLocations />
+                  {is_admin && <SalesByZones salesByZones={sales_by_zones} />}
                 </Row>
-                <Row>
-                  <BestSellingProducts />
-                  <TopSellers />
-                </Row>
+                {is_admin && (
+                  <Row>
+                    <TopStaff topStaff={top_staff} />
+                    <TopClients topClients={top_clients} />
+                  </Row>
+                )}
                 <Row>
                   <StoreVisits />
                   <RecentOrders />
                 </Row>
               </div>
             </Col>
-            <RecentActivity rightColumn={rightColumn} hideRightColumn={toggleRightColumn} />
+            <RecentActivity rightColumn={rightColumn} hideRightColumn={toggleRightColumn} recentActivities={recent_activities} />
           </Row>
         </Container >
       </div >

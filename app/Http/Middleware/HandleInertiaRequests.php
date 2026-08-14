@@ -34,11 +34,26 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+                'roles' => $request->user() ? $request->user()->roles->pluck('name') : [],
+                'permissions' => $request->user() ? $request->user()->getAllPermissions()->pluck('name') : [],
             ],
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
+            'upcoming_followups' => function () use ($request) {
+                if (!$request->user()) return [];
+                return \App\Models\Followup::with(['client.product'])
+                    ->whereBetween('next_date', [now(), now()->addDays(7)])
+                    ->orderBy('next_date', 'asc')
+                    ->get();
+            },
+            'pending_tasks_count' => function () use ($request) {
+                if (!$request->user()) return 0;
+                return \App\Models\Task::where('assigned_to', $request->user()->id)
+                    ->where('status', 'pending')
+                    ->count();
+            }
         ];
     }
 }

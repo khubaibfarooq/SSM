@@ -7,6 +7,8 @@ import {
   Modal,
   Form,
   Button,
+  Nav,
+  Tab
 } from "react-bootstrap";
 import BreadCrumb from "../../Components/Common/BreadCrumb";
 import TableContainer from "../../Components/Common/TableContainer";
@@ -19,6 +21,21 @@ import moment from "moment";
 const FollowupsIndex = (props: any) => {
   const { followups, clients, staff } = props;
   const [modal, setModal] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>("all");
+
+  const filteredFollowups = useMemo(() => {
+    if (!followups) return [];
+    
+    if (activeTab === "pending") {
+      // Pending visits of this week (next_date is in current week)
+      return followups.filter((f: any) => f.next_date && moment(f.next_date).isSame(moment(), 'week'));
+    } else if (activeTab === "old") {
+      // Old visits that visited (date is in the past)
+      return followups.filter((f: any) => f.date && moment(f.date).isBefore(moment(), 'day'));
+    }
+    
+    return followups;
+  }, [followups, activeTab]);
 
   const { data, setData, post, processing, errors, reset } = useForm({
     user_id: "",
@@ -102,15 +119,36 @@ const FollowupsIndex = (props: any) => {
                   </div>
                 </Card.Header>
                 <Card.Body>
-                  <TableContainer
-                    columns={columns}
-                    data={followups || []}
-                    isGlobalFilter={true}
-                    customPageSize={10}
-                    divClass="table-responsive table-card mb-1"
-                    tableClass="align-middle table-nowrap"
-                    theadClass="table-light text-muted"
-                  />
+                  <Nav variant="tabs" className="nav-tabs-custom nav-success nav-justified mb-3">
+                    <Nav.Item>
+                      <Nav.Link eventKey="all" active={activeTab === 'all'} onClick={() => setActiveTab('all')}>
+                        All Followups
+                      </Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                      <Nav.Link eventKey="pending" active={activeTab === 'pending'} onClick={() => setActiveTab('pending')}>
+                        Pending This Week
+                      </Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                      <Nav.Link eventKey="old" active={activeTab === 'old'} onClick={() => setActiveTab('old')}>
+                        Old Visits
+                      </Nav.Link>
+                    </Nav.Item>
+                  </Nav>
+                  <Tab.Content className="text-muted">
+                    <Tab.Pane eventKey={activeTab} active>
+                      <TableContainer
+                        columns={columns}
+                        data={filteredFollowups}
+                        isGlobalFilter={true}
+                        customPageSize={10}
+                        divClass="table-responsive table-card mb-1"
+                        tableClass="align-middle table-nowrap"
+                        theadClass="table-light text-muted"
+                      />
+                    </Tab.Pane>
+                  </Tab.Content>
                 </Card.Body>
               </Card>
             </Col>

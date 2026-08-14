@@ -1,1 +1,0 @@
-var e=`/build/assets/us-C8Qg3PI3.svg`;export{e as t};

@@ -4,14 +4,192 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\User;
+use App\Models\Payment;
+use App\Models\Followup;
 
 class VelzonRoutesController extends Controller
 {
     // dashboard
 
-    public function index()
+    private function getDashboardData(Request $request)
     {
-        return Inertia::render('DashboardEcommerce/index');
+        $user = auth()->user();
+        if (!$user) {
+            return [];
+        }
+
+        $startDate = $request->input('start_date') ? \Carbon\Carbon::parse($request->input('start_date'))->startOfDay() : now()->startOfMonth();
+        $endDate = $request->input('end_date') ? \Carbon\Carbon::parse($request->input('end_date'))->endOfDay() : now()->endOfMonth();
+
+        $activities = collect();
+        $isAdmin = $user->hasRole(['superadmin', 'admin']);
+        $top_staff = [];
+        $top_clients = [];
+
+        if ($isAdmin) {
+            $total_revenue = Payment::whereBetween('created_at', [$startDate, $endDate])->sum('amount');
+            $total_clients = User::role('client')->whereBetween('created_at', [$startDate, $endDate])->count();
+            $total_followups = Followup::whereBetween('created_at', [$startDate, $endDate])->count();
+            $total_payments = Payment::whereBetween('created_at', [$startDate, $endDate])->count();
+
+            $recent_clients = User::role('client')->whereBetween('created_at', [$startDate, $endDate])->latest()->take(10)->get();
+            $recent_payments = Payment::with('fromUser')->whereBetween('created_at', [$startDate, $endDate])->latest()->take(10)->get();
+            $recent_followups = Followup::with('client')->whereBetween('created_at', [$startDate, $endDate])->latest()->take(10)->get();
+            
+            $top_staff = Payment::whereBetween('created_at', [$startDate, $endDate])
+                ->with('byUser')
+                ->selectRaw('by_user_id, SUM(amount) as total_amount, COUNT(id) as transactions')
+                ->groupBy('by_user_id')
+                ->orderByDesc('total_amount')
+                ->take(5)
+                ->get()
+                ->map(function ($payment) {
+                    return [
+                        'name' => $payment->byUser->name ?? 'Unknown',
+                        'email' => $payment->byUser->email ?? '',
+                        'total_amount' => $payment->total_amount,
+                        'transactions' => $payment->transactions,
+                    ];
+                });
+
+            $top_clients = Payment::whereBetween('created_at', [$startDate, $endDate])
+                ->with('fromUser')
+                ->selectRaw('from_user_id, SUM(amount) as total_amount, COUNT(id) as transactions')
+                ->groupBy('from_user_id')
+                ->orderByDesc('total_amount')
+                ->take(5)
+                ->get()
+                ->map(function ($payment) {
+                    return [
+                        'name' => $payment->fromUser->name ?? 'Unknown',
+                        'email' => $payment->fromUser->email ?? '',
+                        'total_amount' => $payment->total_amount,
+                        'transactions' => $payment->transactions,
+                    ];
+                });
+        } else {
+            $total_revenue = Payment::where('by_user_id', $user->id)->whereBetween('created_at', [$startDate, $endDate])->sum('amount');
+            $total_followups = Followup::where('by_user_id', $user->id)->whereBetween('created_at', [$startDate, $endDate])->count();
+            $total_payments = Payment::where('by_user_id', $user->id)->whereBetween('created_at', [$startDate, $endDate])->count();
+            
+            $clientIdsFromPayments = Payment::where('by_user_id', $user->id)->pluck('from_user_id')->toArray();
+            $clientIdsFromFollowups = Followup::where('by_user_id', $user->id)->pluck('user_id')->toArray();
+            $clientIds = array_unique(array_merge($clientIdsFromPayments, $clientIdsFromFollowups));
+            
+            $total_clients = User::whereIn('id', $clientIds)->whereBetween('created_at', [$startDate, $endDate])->count();
+
+            $recent_clients = User::whereIn('id', $clientIds)->whereBetween('created_at', [$startDate, $endDate])->latest()->take(10)->get();
+            $recent_payments = Payment::with('fromUser')->where('by_user_id', $user->id)->whereBetween('created_at', [$startDate, $endDate])->latest()->take(10)->get();
+            $recent_followups = Followup::with('client')->where('by_user_id', $user->id)->whereBetween('created_at', [$startDate, $endDate])->latest()->take(10)->get();
+        }
+
+        foreach($recent_clients as $c) {
+            $activities->push([
+                'type' => 'client',
+                'title' => 'New Client Added',
+                'description' => $c->name,
+                'date' => $c->created_at->toIso8601String()
+            ]);
+        }
+        foreach($recent_payments as $p) {
+            $activities->push([
+                'type' => 'payment',
+                'title' => 'Payment Received',
+                'description' => 'Rs. ' . number_format($p->amount, 2) . ' from ' . ($p->fromUser->name ?? 'Unknown'),
+                'date' => $p->created_at->toIso8601String()
+            ]);
+        }
+        foreach($recent_followups as $f) {
+            $activities->push([
+                'type' => 'followup',
+                'title' => 'Followup Recorded',
+                'description' => 'For ' . ($f->client->name ?? 'Unknown'),
+                'date' => $f->created_at->toIso8601String()
+            ]);
+        }
+
+        $recent_activities = $activities->sortByDesc('date')->take(10)->values()->all();
+
+        // Chart Data (Filtered Dates)
+        $chartCategories = [];
+        $paymentData = [];
+        $followupData = [];
+
+        // Safety check to prevent generating a massive loop if someone passes a 10 year span
+        // Limit graph generation to maximum of 90 days.
+        $graphStartDate = $startDate->copy();
+        if ($startDate->diffInDays($endDate) > 90) {
+            $graphStartDate = $endDate->copy()->subDays(90);
+        }
+
+        $period = \Carbon\CarbonPeriod::create($graphStartDate, '1 day', $endDate);
+        foreach ($period as $date) {
+            $dateString = $date->format('Y-m-d');
+            $chartCategories[] = $date->format('M d');
+
+            $paymentQuery = Payment::whereDate('created_at', $dateString);
+            $followupQuery = Followup::whereDate('created_at', $dateString);
+
+            if (!$user->hasRole(['superadmin', 'admin'])) {
+                $paymentQuery->where('by_user_id', $user->id);
+                $followupQuery->where('by_user_id', $user->id);
+            }
+
+            $paymentData[] = $paymentQuery->sum('amount');
+            $followupData[] = $followupQuery->count();
+        }
+
+        $chart_data = [
+            'categories' => $chartCategories,
+            'series' => [
+                [
+                    'name' => 'Payments (Rs)',
+                    'type' => 'area',
+                    'data' => $paymentData
+                ],
+                [
+                    'name' => 'Followups',
+                    'type' => 'line',
+                    'data' => $followupData
+                ]
+            ]
+        ];
+
+        $sales_by_zones = [];
+        if ($isAdmin) {
+            $sales_by_zones = \App\Models\Payment::join('users', 'payments.from_user_id', '=', 'users.id')
+                ->join('areas', 'users.area_id', '=', 'areas.id')
+                ->join('zones', 'areas.zone_id', '=', 'zones.id')
+                ->whereBetween('payments.created_at', [$startDate, $endDate])
+                ->selectRaw('zones.name, sum(payments.amount) as total')
+                ->groupBy('zones.name')
+                ->orderByDesc('total')
+                ->get();
+        }
+
+        return [
+            'total_revenue' => $total_revenue,
+            'total_clients' => $total_clients,
+            'total_followups' => $total_followups,
+            'total_payments' => $total_payments,
+            'recent_activities' => $recent_activities,
+            'chart_data' => $chart_data,
+            'is_admin' => $isAdmin,
+            'top_staff' => $top_staff,
+            'top_clients' => $top_clients,
+            'sales_by_zones' => $sales_by_zones,
+            'zones' => \App\Models\Zone::with('areas')->get(),
+            'filters' => [
+                'start_date' => $startDate->format('d M, Y'),
+                'end_date' => $endDate->format('d M, Y'),
+            ]
+        ];
+    }
+
+    public function index(Request $request)
+    {
+        return Inertia::render('DashboardEcommerce/index', $this->getDashboardData($request));
     }
 
     public function dashboard_analytics()
@@ -24,9 +202,9 @@ class VelzonRoutesController extends Controller
         return Inertia::render('DashboardCrm/index');
     }
 
-    public function dashboard()
+    public function dashboard(Request $request)
     {
-        return Inertia::render('DashboardEcommerce/index');
+        return Inertia::render('DashboardEcommerce/index', $this->getDashboardData($request));
     }
 
     public function dashboard_crypto()

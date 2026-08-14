@@ -2,9 +2,70 @@ import React from 'react';
 import CountUp from "@/Components/Common/CountUp";
 import { Card, Col } from 'react-bootstrap';
 import { Link } from '@inertiajs/react';
-import { ecomWidgets } from '../../common/data/dashboardEcommerce';
+const Widgets = ({ totalRevenue, totalClients, totalFollowups, totalPayments }: any) => {
+    const ecomWidgets = [
+        {
+            id: 1,
+            cardColor: "primary",
+            label: "Total Revenue",
+            badge: "ri-arrow-right-up-line",
+            badgeClass: "success",
+            percentage: "+0.00",
+            counter: totalRevenue || 0,
+            link: "View net earnings",
+            bgcolor: "success",
+            icon: "bx bx-dollar-circle",
+            decimals: 2,
+            prefix: "Rs. ",
+            suffix: ""
+        },
+        {
+            id: 2,
+            cardColor: "info",
+            label: "Total Payments",
+            badge: "ri-arrow-right-down-line",
+            badgeClass: "danger",
+            percentage: "-0.00",
+            counter: totalPayments || 0,
+            link: "View all payments",
+            bgcolor: "info",
+            icon: "bx bx-wallet",
+            decimals: 0,
+            prefix: "",
+            suffix: ""
+        },
+        {
+            id: 3,
+            cardColor: "warning",
+            label: "Clients",
+            badge: "ri-arrow-right-up-line",
+            badgeClass: "success",
+            percentage: "+0.00",
+            counter: totalClients || 0,
+            link: "See details",
+            bgcolor: "warning",
+            icon: "bx bx-user-circle",
+            decimals: 0,
+            prefix: "",
+            suffix: ""
+        },
+        {
+            id: 4,
+            cardColor: "primary",
+            label: "Followups",
+            badge: "ri-arrow-right-up-line",
+            badgeClass: "success",
+            percentage: "+0.00",
+            counter: totalFollowups || 0,
+            link: "View followups",
+            bgcolor: "primary",
+            icon: "bx bx-conversation",
+            decimals: 0,
+            prefix: "",
+            suffix: ""
+        }
+    ];
 
-const Widgets = () => {
     return (
         <React.Fragment>
             {ecomWidgets.map((item: any, key: number) => (

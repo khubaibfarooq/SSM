@@ -1,1 +1,0 @@
-import{o as e}from"./rolldown-runtime-BM3Ffeng.js";import{On as t}from"./app-ghBtHLVx.js";var n=e(t());function r(){let[,e]=(0,n.useReducer)(e=>e+1,0);return e}export{r as t};

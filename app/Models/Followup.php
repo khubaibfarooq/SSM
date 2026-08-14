@@ -15,11 +15,11 @@ class Followup extends Model
 
     public function client()
     {
-        return $this->belongsTo(User::class, 'user_id')->where('type', 'client');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function staff()
     {
-        return $this->belongsTo(User::class, 'by_user_id')->where('type', 'staff');
+        return $this->belongsTo(User::class, 'by_user_id');
     }
 }

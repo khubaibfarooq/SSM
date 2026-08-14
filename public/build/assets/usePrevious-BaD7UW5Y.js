@@ -1,1 +1,0 @@
-import{o as e}from"./rolldown-runtime-BM3Ffeng.js";import{On as t}from"./app-ghBtHLVx.js";var n=e(t());function r(e){let t=(0,n.useRef)(null);return(0,n.useEffect)(()=>{t.current=e}),t.current}export{r as t};

@@ -1,1 +1,0 @@
-var e=`/build/assets/logo-sm-C_2SwDY3.png`;export{e as t};

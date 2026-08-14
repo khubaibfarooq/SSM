@@ -6,25 +6,48 @@ use App\Models\Plan;
 use App\Models\User;
 use App\Models\Payment;
 use App\Models\PaymentDetail;
+use App\Models\Zone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Spatie\Permission\Models\Role;
 use Inertia\Inertia;
 
 class UserController extends Controller
 {
     public function index()
     {
+        $authUser = auth()->user();
+        $userQuery = User::with(['plan', 'product', 'payments.details.toUser', 'receivedAllocations.payment.fromUser', 'roles'])->latest();
+        $rolesQuery = Role::query();
+
+        if ($authUser && $authUser->hasRole('Manager')) {
+            $userQuery->where('id', '!=', $authUser->id)
+                     
+                      ->whereDoesntHave('roles', function($q) {
+                          $q->whereIn('name', ['admin', 'superadmin']);
+                      });
+            $rolesQuery->whereNotIn('name', ['admin', 'superadmin']);
+        }
+
         return Inertia::render('Users/Index', [
-            'users' => User::with(['plan', 'payments.details.toUser', 'receivedAllocations.payment.fromUser'])
-                ->latest()
-                ->get(),
+            'users' => $userQuery->get(),
             'plans' => Plan::all(),
+            'products' => \App\Models\Product::all(),
+            'roles' => $rolesQuery->get(),
+            'zones' => Zone::with('areas')->get(),
         ]);
     }
 
     public function store(Request $request)
     {
+        $authUser = auth()->user();
+        if ($authUser && $authUser->hasRole('Manager')) {
+            if (in_array($request->role, ['admin', 'superadmin'])) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
         $validated = $request->validate([
             'name'            => 'required|string|max:255',
             'email'           => 'required|email|max:255|unique:users,email',
@@ -32,29 +55,45 @@ class UserController extends Controller
             'contact'         => 'nullable|string|max:50',
             'address'         => 'nullable|string|max:500',
             'business_name'   => 'nullable|string|max:255',
-            'type'            => 'nullable|in:admin,client,staff',
+            'product_id'      => 'nullable|exists:products,id',
             'plan_id'         => 'nullable|exists:plans,id',
             'plan_added_date' => 'nullable|date',
+            'role'            => 'nullable|string|exists:roles,name',
+            'area_id'         => 'nullable|exists:areas,id',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
 
-        User::create($validated);
+        $user = User::create($validated);
+
+        if (!empty($validated['role'])) {
+            $user->assignRole($validated['role']);
+        }
 
         return back()->with('success', 'User created successfully.');
     }
 
     public function update(Request $request, User $user)
     {
+        $authUser = auth()->user();
+        if ($authUser && $authUser->hasRole('Manager')) {
+            if ($user->hasRole(['admin', 'superadmin']) || 
+                in_array($request->role, ['admin', 'superadmin'])) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
         $validated = $request->validate([
             'name'            => 'required|string|max:255',
             'email'           => 'required|email|max:255|unique:users,email,' . $user->id,
             'contact'         => 'nullable|string|max:50',
             'address'         => 'nullable|string|max:500',
             'business_name'   => 'nullable|string|max:255',
-            'type'            => 'nullable|in:admin,client,staff',
+            'product_id'      => 'nullable|exists:products,id',
             'plan_id'         => 'nullable|exists:plans,id',
             'plan_added_date' => 'nullable|date',
+            'role'            => 'nullable|string|exists:roles,name',
+            'area_id'         => 'nullable|exists:areas,id',
         ]);
 
         $user->update($validated);
@@ -66,11 +105,24 @@ class UserController extends Controller
             $user->update(['password' => Hash::make($request->password)]);
         }
 
+        if (isset($validated['role'])) {
+            $user->syncRoles([$validated['role']]);
+        } else {
+            $user->syncRoles([]);
+        }
+
         return back()->with('success', 'User updated successfully.');
     }
 
     public function destroy(User $user)
     {
+        $authUser = auth()->user();
+        if ($authUser && $authUser->hasRole('Manager')) {
+            if ($user->hasRole(['admin', 'superadmin'])) {
+                abort(403, 'Managers cannot delete administrators.');
+            }
+        }
+
         $user->delete();
 
         return back()->with('success', 'User deleted successfully.');

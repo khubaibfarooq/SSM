@@ -1,1 +1,0 @@
-var e=`/build/assets/slack-Dy4YoRKU.png`;export{e as t};

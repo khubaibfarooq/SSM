@@ -157,7 +157,7 @@ const PaymentsIndex = (props: any) => {
         header: "Total Amount",
         accessorKey: "amount",
         enableColumnFilter: false,
-        cell: (cell: any) => `$${cell.getValue()}`,
+        cell: (cell: any) => `Rs. ${cell.getValue()}`,
       },
       {
         header: "Recorded By",
@@ -174,7 +174,7 @@ const PaymentsIndex = (props: any) => {
             <div className="d-flex flex-wrap gap-1">
               {details.map((d: any, i: number) => (
                 <div key={i} className="badge bg-primary-subtle text-primary border border-primary-subtle">
-                  {d.to_user?.name}: ${d.amount}
+                  {d.to_user?.name}: Rs. {d.amount}
                 </div>
               ))}
             </div>
@@ -403,7 +403,7 @@ const PaymentsIndex = (props: any) => {
                     >
                       <option value="">Select Payer</option>
                       {users.map((u: any) => (
-                        <option key={u.id} value={u.id}>{u.name} (Total: ${Number(u.balance).toFixed(2)})</option>
+                        <option key={u.id} value={u.id}>{u.name} (Total: Rs. {Number(u.balance).toFixed(2)})</option>
                       ))}
                     </Form.Select>
                     <Form.Control.Feedback type="invalid">{errors.from_user_id}</Form.Control.Feedback>
@@ -424,7 +424,7 @@ const PaymentsIndex = (props: any) => {
                         <option value="">-- Select Transaction --</option>
                         {(users.find((u: any) => String(u.id) === String(data.from_user_id))?.received_allocations || []).map((a: any) => (
                           <option key={a.id} value={a.id}>
-                            {moment(a.payment?.date).format("DD MMM, YY")} - From: {a.payment?.from_user?.name} (Remaining: ${Number(a.remaining_balance).toFixed(2)} / Total: ${Number(a.amount).toFixed(2)})
+                            {moment(a.payment?.date).format("DD MMM, YY")} - From: {a.payment?.from_user?.name} (Remaining: Rs. {Number(a.remaining_balance).toFixed(2)} / Total: Rs. {Number(a.amount).toFixed(2)})
                           </option>
                         ))}
                       </Form.Select>
@@ -457,15 +457,15 @@ const PaymentsIndex = (props: any) => {
                   return (
                     <div className={`p-2 rounded bg-light border ${!isBalanced && allocated !== 0 ? 'border-warning' : 'border-light'}`}>
                       <div className="d-flex justify-content-between fs-12">
-                        <span>Total to Allocate: <b>${total.toFixed(2)}</b></span>
+                        <span>Total to Allocate: <b>Rs. {total.toFixed(2)}</b></span>
                         <span className={!isBalanced ? "text-warning" : "text-success"}>
-                          Allocated: <b>${allocated.toFixed(2)}</b>
+                          Allocated: <b>Rs. {allocated.toFixed(2)}</b>
                         </span>
-                        <span>Remaining: <b className={!isBalanced ? "text-warning" : ""}>${remaining.toFixed(2)}</b></span>
+                        <span>Remaining: <b className={!isBalanced ? "text-warning" : ""}>Rs. {remaining.toFixed(2)}</b></span>
                       </div>
                       {!isBalanced && total > 0 && (
                         <div className="text-warning fs-11 mt-1">
-                          <i className="ri-error-warning-line me-1"></i> Allocation must exactly equal the total amount (${total.toFixed(2)})
+                          <i className="ri-error-warning-line me-1"></i> Allocation must exactly equal the total amount (Rs. ${total.toFixed(2)})
                         </div>
                       )}
                       {isBalanced && total > 0 && (
@@ -489,7 +489,7 @@ const PaymentsIndex = (props: any) => {
                     >
                       <option value="">Select Recipient</option>
                       {users.map((u: any) => (
-                        <option key={u.id} value={u.id}>{u.name} (Balance: ${u.balance})</option>
+                        <option key={u.id} value={u.id}>{u.name} (Balance: Rs. {u.balance})</option>
                       ))}
                     </Form.Select>
                   </Col>
@@ -552,7 +552,7 @@ const PaymentsIndex = (props: any) => {
                 >
                   <option value="">Select Client</option>
                   {users.map((u: any) => (
-                    <option key={u.id} value={u.id}>{u.name} (Balance: ${Number(u.balance).toFixed(2)})</option>
+                    <option key={u.id} value={u.id}>{u.name} (Balance: Rs. {Number(u.balance).toFixed(2)})</option>
                   ))}
                 </Form.Select>
                 <Form.Control.Feedback type="invalid">{clientPaymentForm.errors.from_user_id}</Form.Control.Feedback>

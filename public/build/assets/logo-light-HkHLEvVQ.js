@@ -1,1 +1,0 @@
-var e=`/build/assets/logo-light-ClrpaeKd.png`;export{e as t};

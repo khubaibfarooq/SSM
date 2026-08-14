@@ -17,7 +17,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const PlansIndex = (props: any) => {
-  const { plans } = props;
+  const { plans, products } = props;
   const [modal, setModal] = useState<boolean>(false);
   const [isEdit, setIsEdit] = useState<boolean>(false);
   const [currentPlan, setCurrentPlan] = useState<any>(null);
@@ -27,6 +27,7 @@ const PlansIndex = (props: any) => {
     name: "",
     type: "monthly",
     amount: "",
+    product_id: "",
   });
 
   const toggle = useCallback(() => {
@@ -64,6 +65,7 @@ const PlansIndex = (props: any) => {
       name: plan.name,
       type: plan.type,
       amount: plan.amount.toString(),
+      product_id: plan.product_id ? plan.product_id.toString() : "",
     });
     setIsEdit(true);
     setModal(true);
@@ -91,6 +93,12 @@ const PlansIndex = (props: any) => {
         enableColumnFilter: false,
       },
       {
+        header: "Product",
+        accessorKey: "product.name",
+        enableColumnFilter: false,
+        cell: (cell: any) => cell.getValue() || "N/A",
+      },
+      {
         header: "Type",
         accessorKey: "type",
         enableColumnFilter: false,
@@ -104,7 +112,7 @@ const PlansIndex = (props: any) => {
         header: "Amount",
         accessorKey: "amount",
         enableColumnFilter: false,
-        cell: (cell: any) => `$${cell.getValue()}`,
+        cell: (cell: any) => `Rs. ${cell.getValue()}`,
       },
       {
         header: "Action",
@@ -200,6 +208,24 @@ const PlansIndex = (props: any) => {
                   isInvalid={!!errors.name}
                 />
                 <Form.Control.Feedback type="invalid">{errors.name}</Form.Control.Feedback>
+              </div>
+
+              <div className="mb-3">
+                <Form.Label htmlFor="product-id">Product</Form.Label>
+                <Form.Select
+                  id="product-id"
+                  value={data.product_id}
+                  onChange={(e) => setData("product_id", e.target.value)}
+                  isInvalid={!!errors.product_id}
+                >
+                  <option value="">Select a Product</option>
+                  {products && products.map((product: any) => (
+                    <option key={product.id} value={product.id}>
+                      {product.name}
+                    </option>
+                  ))}
+                </Form.Select>
+                <Form.Control.Feedback type="invalid">{errors.product_id}</Form.Control.Feedback>
               </div>
 
               <div className="mb-3">

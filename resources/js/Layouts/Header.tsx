@@ -1,4 +1,4 @@
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 import React, { useState } from "react";
 
 //import images
@@ -17,6 +17,7 @@ import NotificationDropdown from "../Components/Common/NotificationDropdown";
 
 const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }: any) => {
     const dispatch : any = useDispatch();
+    const { pending_tasks_count } = usePage().props as any;
 
 
     const selectDashboardData = createSelector(
@@ -136,6 +137,19 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }: any) => {
                                 layoutMode={layoutModeType}
                                 onChangeLayoutMode={onChangeLayoutMode}
                             />
+
+                            {/* Tasks Icon */}
+                            <div className="topbar-head-dropdown header-item">
+                                <Link href="/tasks" className="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle">
+                                    <i className="bx bx-task fs-22"></i>
+                                    {pending_tasks_count > 0 && (
+                                        <span className="position-absolute topbar-badge fs-10 translate-middle badge rounded-pill bg-danger">
+                                            {pending_tasks_count}
+                                            <span className="visually-hidden">pending tasks</span>
+                                        </span>
+                                    )}
+                                </Link>
+                            </div>
 
                             {/* NotificationDropdown */}
                             <NotificationDropdown />

@@ -1,1 +1,0 @@
-import{o as e}from"./rolldown-runtime-BM3Ffeng.js";import{t}from"./jsx-runtime-BOguVsb-.js";import{On as n}from"./app-ghBtHLVx.js";import{a as r}from"./ThemeProvider-BXoeeOv-.js";var i=e(n()),a=e(r()),o=t(),s=(e=>i.forwardRef((t,n)=>(0,o.jsx)(`div`,{...t,ref:n,className:(0,a.default)(t.className,e)})));export{s as t};

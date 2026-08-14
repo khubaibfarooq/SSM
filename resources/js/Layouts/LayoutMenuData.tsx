@@ -1,10 +1,18 @@
 import { Inertia } from "@inertiajs/inertia";
+import { usePage } from "@inertiajs/react";
 import React, { useEffect, useState } from "react";
 
 const Navdata = () => {
     const [isDashboard, setIsDashboard] = useState<boolean>(false);
     const [isSaleManagement, setIsSaleManagement] = useState<boolean>(false);
     const [iscurrentState, setIscurrentState] = useState('Dashboard');
+
+    const { auth } = usePage().props as any;
+    const userRoles = auth?.roles || [];
+    const userPermissions = auth?.permissions || [];
+
+    // Helper to check access
+    const can = (permission: string) => userRoles.includes('superadmin') || userPermissions.includes(permission);
 
     function updateIconSidebar(e: any) {
         if (e && e.target && e.target.getAttribute("sub-items")) {
@@ -55,11 +63,18 @@ const Navdata = () => {
                 updateIconSidebar(e);
             },
             subItems: [
-                { id: "plans",     label: "Plans",     link: "/plans",     parentId: "sale-management" },
-                { id: "followups", label: "Followups", link: "/followups", parentId: "sale-management" },
-                { id: "payments",  label: "Payments",  link: "/payments",  parentId: "sale-management" },
-                { id: "users",     label: "Users",     link: "/users",     parentId: "sale-management" },
-            ],
+                (can('manage reports') || userRoles.includes('superadmin') || userRoles.includes('admin')) && { id: "reports", label: "Reports", link: "/reports", parentId: "sale-management" },
+                (userRoles.includes('Staff') || userRoles.includes('Manager') || userRoles.includes('superadmin') || userRoles.includes('admin')) && { id: "tasks", label: "Tasks", link: "/tasks", parentId: "sale-management" },
+                (can('manage plans') || userRoles.includes('superadmin')) && { id: "products", label: "Products", link: "/products", parentId: "sale-management" },
+                (can('manage plans') || userRoles.includes('superadmin')) && { id: "plans", label: "Plans", link: "/plans", parentId: "sale-management" },
+                (can('manage followups') || userRoles.includes('superadmin')) && { id: "followups", label: "Followups", link: "/followups", parentId: "sale-management" },
+                (can('manage payments') || userRoles.includes('superadmin')) && { id: "payments", label: "Payments", link: "/payments", parentId: "sale-management" },
+                (can('manage users') || userRoles.includes('superadmin')) && { id: "users", label: "Users", link: "/users", parentId: "sale-management" },
+                (can('manage clients') || userRoles.includes('superadmin')) && { id: "clients", label: "Clients", link: "/clients", parentId: "sale-management" },
+                (userRoles.includes('admin') || userRoles.includes('superadmin')) && { id: "locations", label: "Locations", link: "/locations", parentId: "sale-management" },
+                userRoles.includes('superadmin') && { id: "roles", label: "Roles", link: "/roles", parentId: "sale-management" },
+                userRoles.includes('superadmin') && { id: "permissions", label: "Permissions", link: "/permissions", parentId: "sale-management" },
+            ].filter(Boolean),
         },
     ];
 
