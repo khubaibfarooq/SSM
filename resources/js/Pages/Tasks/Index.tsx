@@ -108,10 +108,34 @@ const TasksIndex = (props: any) => {
         cell: (c: any) => c.getValue() || "—",
       },
       {
+        header: "Assigned Date",
+        accessorKey: "created_at",
+        enableColumnFilter: false,
+        cell: (c: any) => c.getValue() ? moment(c.getValue()).format("DD MMM, YYYY hh:mm A") : "—",
+      },
+      {
         header: "Due Date",
         accessorKey: "due_date",
         enableColumnFilter: false,
         cell: (c: any) => c.getValue() ? moment(c.getValue()).format("DD MMM, YYYY") : "—",
+      },
+      {
+        header: "Completed Date",
+        accessorKey: "completed_at",
+        enableColumnFilter: false,
+        cell: (c: any) => c.getValue() ? moment(c.getValue()).format("DD MMM, YYYY hh:mm A") : "—",
+      },
+      {
+        header: "Approved By",
+        accessorKey: "approved_by",
+        enableColumnFilter: false,
+        cell: (cellProps: any) => cellProps.row.original.approver?.name || "—",
+      },
+      {
+        header: "Approved Date",
+        accessorKey: "approved_at",
+        enableColumnFilter: false,
+        cell: (c: any) => c.getValue() ? moment(c.getValue()).format("DD MMM, YYYY hh:mm A") : "—",
       },
       {
         header: "Status",

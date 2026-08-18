@@ -68,14 +68,14 @@ class User extends Authenticatable
         return $this->belongsTo(Area::class);
     }
 
-    public function followups()
+    public function visits()
     {
-        return $this->hasMany(Followup::class, 'user_id');
+        return $this->hasMany(Visit::class, 'user_id');
     }
 
-    public function assignedFollowups()
+    public function assignedVisits()
     {
-        return $this->hasMany(Followup::class, 'by_user_id');
+        return $this->hasMany(Visit::class, 'by_user_id');
     }
 
     public function payments()

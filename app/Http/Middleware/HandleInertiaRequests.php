@@ -41,9 +41,9 @@ class HandleInertiaRequests extends Middleware
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
-            'upcoming_followups' => function () use ($request) {
+            'upcoming_visits' => function () use ($request) {
                 if (!$request->user()) return [];
-                return \App\Models\Followup::with(['client.product'])
+                return \App\Models\Visit::with(['client.product'])
                     ->whereBetween('next_date', [now(), now()->addDays(7)])
                     ->orderBy('next_date', 'asc')
                     ->get();

@@ -15,6 +15,19 @@ class PaymentController extends Controller
     {
         $query = Payment::with(['fromUser', 'byUser', 'client', 'details.toUser']);
 
+        $user = auth()->user();
+        $isManagerOrAdmin = $user->hasAnyRole(['Manager', 'manager', 'admin', 'superadmin']);
+
+        if (!$isManagerOrAdmin) {
+            $query->where(function ($q) use ($user) {
+                $q->where('from_user_id', $user->id)
+                  ->orWhere('by_user_id', $user->id)
+                  ->orWhereHas('details', function ($q2) use ($user) {
+                      $q2->where('to_user_id', $user->id);
+                  });
+            });
+        }
+
         // Filtering Logic
         if ($request->filled('from_user_id')) {
             $query->where('from_user_id', $request->from_user_id);

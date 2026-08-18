@@ -30,7 +30,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage users',
             'manage settings',
             'manage plans',
-            'manage followups',
+            'manage visits',
             'manage payments'
         ];
 

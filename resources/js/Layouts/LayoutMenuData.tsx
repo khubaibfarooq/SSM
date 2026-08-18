@@ -64,10 +64,11 @@ const Navdata = () => {
             },
             subItems: [
                 (can('manage reports') || userRoles.includes('superadmin') || userRoles.includes('admin')) && { id: "reports", label: "Reports", link: "/reports", parentId: "sale-management" },
+                { id: "calendar-report", label: "Calendar Report", link: "/reports/calendar", parentId: "sale-management" },
                 (userRoles.includes('Staff') || userRoles.includes('Manager') || userRoles.includes('superadmin') || userRoles.includes('admin')) && { id: "tasks", label: "Tasks", link: "/tasks", parentId: "sale-management" },
                 (can('manage plans') || userRoles.includes('superadmin')) && { id: "products", label: "Products", link: "/products", parentId: "sale-management" },
                 (can('manage plans') || userRoles.includes('superadmin')) && { id: "plans", label: "Plans", link: "/plans", parentId: "sale-management" },
-                (can('manage followups') || userRoles.includes('superadmin')) && { id: "followups", label: "Followups", link: "/followups", parentId: "sale-management" },
+
                 (can('manage payments') || userRoles.includes('superadmin')) && { id: "payments", label: "Payments", link: "/payments", parentId: "sale-management" },
                 { id: "tickets", label: "Help Desk", link: "/tickets", parentId: "sale-management" },
                 (can('manage users') || userRoles.includes('superadmin')) && { id: "users", label: "Users", link: "/users", parentId: "sale-management" },

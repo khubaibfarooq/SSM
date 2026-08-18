@@ -2,7 +2,7 @@ import React from 'react';
 import CountUp from "@/Components/Common/CountUp";
 import { Card, Col } from 'react-bootstrap';
 import { Link } from '@inertiajs/react';
-const Widgets = ({ totalRevenue, totalClients, totalFollowups, totalPayments }: any) => {
+const Widgets = ({ totalRevenue, totalClients, totalVisits, totalPayments }: any) => {
     const ecomWidgets = [
         {
             id: 1,
@@ -52,12 +52,12 @@ const Widgets = ({ totalRevenue, totalClients, totalFollowups, totalPayments }: 
         {
             id: 4,
             cardColor: "primary",
-            label: "Followups",
+            label: "Visits",
             badge: "ri-arrow-right-up-line",
             badgeClass: "success",
             percentage: "+0.00",
-            counter: totalFollowups || 0,
-            link: "View followups",
+            counter: totalVisits || 0,
+            link: "View visits",
             bgcolor: "primary",
             icon: "bx bx-conversation",
             decimals: 0,

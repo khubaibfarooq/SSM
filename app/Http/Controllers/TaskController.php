@@ -12,7 +12,7 @@ class TaskController extends Controller
     public function index()
     {
         $user = auth()->user();
-        $query = Task::with(['assignee', 'assigner'])->latest();
+        $query = Task::with(['assignee', 'assigner', 'approver'])->latest();
 $staff="";
         if ($user->hasRole(['admin', 'superadmin'])) {
             $staff=User::role(['Staff', 'Manager', 'manager', 'admin', 'superadmin'])->get(['id', 'name']);
@@ -97,7 +97,16 @@ $staff="";
             }
         }
 
-        $task->update(['status' => $validated['status']]);
+        $updateData = ['status' => $validated['status']];
+
+        if ($validated['status'] === 'completed') {
+            $updateData['completed_at'] = now();
+        } elseif ($validated['status'] === 'approved') {
+            $updateData['approved_by'] = $user->id;
+            $updateData['approved_at'] = now();
+        }
+
+        $task->update($updateData);
 
         return back()->with('success', 'Task status updated.');
     }

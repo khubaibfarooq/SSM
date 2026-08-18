@@ -6,7 +6,7 @@ import BreadCrumb from '../../Components/Common/BreadCrumb';
 import TableContainer from '../../Components/Common/TableContainer';
 import ReactApexChart from 'react-apexcharts';
 
-const ReportsIndex = ({ followups, clients, staff, products, zones, filters }: any) => {
+const ReportsIndex = ({ visits, clients, staff, products, zones, filters }: any) => {
     const [filterData, setFilterData] = useState({
         staff_id: filters?.staff_id || '',
         client_id: filters?.client_id || '',
@@ -36,13 +36,13 @@ const ReportsIndex = ({ followups, clients, staff, products, zones, filters }: a
     const visitData: Record<string, number> = {};
     const staffData: Record<string, number> = {};
 
-    followups.forEach((f: any) => {
+    visits.forEach((v: any) => {
         // Line Chart: Visits over time
-        const d = new Date(f.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const d = new Date(v.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         visitData[d] = (visitData[d] || 0) + 1;
 
         // Donut Chart: Visits by Staff
-        const s = f.staff?.name || 'Unknown';
+        const s = v.staff?.name || 'Unknown';
         staffData[s] = (staffData[s] || 0) + 1;
     });
 
@@ -69,7 +69,7 @@ const ReportsIndex = ({ followups, clients, staff, products, zones, filters }: a
         { header: "Client", accessorKey: "client.name", enableColumnFilter: false, cell: (c: any) => c.getValue() || "—" },
         { header: "Product", accessorKey: "client.product.name", enableColumnFilter: false, cell: (c: any) => c.getValue() || "—" },
         { header: "Staff", accessorKey: "staff.name", enableColumnFilter: false, cell: (c: any) => c.getValue() || "—" },
-        { header: "Next Followup", accessorKey: "next_date", enableColumnFilter: false, cell: (c: any) => c.getValue() ? new Date(c.getValue()).toLocaleDateString() : "—" },
+        { header: "Next Visit", accessorKey: "next_date", enableColumnFilter: false, cell: (c: any) => c.getValue() ? new Date(c.getValue()).toLocaleDateString() : "—" },
         { header: "Description", accessorKey: "description", enableColumnFilter: false, cell: (c: any) => c.getValue() || "—" },
     ], []);
 
@@ -175,7 +175,7 @@ const ReportsIndex = ({ followups, clients, staff, products, zones, filters }: a
                         <Card.Body>
                             <TableContainer
                                 columns={columns}
-                                data={followups || []}
+                                data={visits || []}
                                 isGlobalFilter={false}
                                 customPageSize={10}
                                 divClass="table-responsive table-card mb-1"

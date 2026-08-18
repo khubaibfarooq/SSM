@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\User;
 use App\Models\Payment;
-use App\Models\Followup;
+use App\Models\Visit;
 
 class VelzonRoutesController extends Controller
 {
@@ -30,12 +30,12 @@ class VelzonRoutesController extends Controller
         if ($isAdmin) {
             $total_revenue = Payment::whereBetween('created_at', [$startDate, $endDate])->sum('amount');
             $total_clients = User::role('client')->whereBetween('created_at', [$startDate, $endDate])->count();
-            $total_followups = Followup::whereBetween('created_at', [$startDate, $endDate])->count();
+            $total_visits = Visit::whereBetween('created_at', [$startDate, $endDate])->count();
             $total_payments = Payment::whereBetween('created_at', [$startDate, $endDate])->count();
 
             $recent_clients = User::role('client')->whereBetween('created_at', [$startDate, $endDate])->latest()->take(10)->get();
             $recent_payments = Payment::with('fromUser')->whereBetween('created_at', [$startDate, $endDate])->latest()->take(10)->get();
-            $recent_followups = Followup::with('client')->whereBetween('created_at', [$startDate, $endDate])->latest()->take(10)->get();
+            $recent_visits = Visit::with('client')->whereBetween('created_at', [$startDate, $endDate])->latest()->take(10)->get();
             
             $top_staff = Payment::whereBetween('created_at', [$startDate, $endDate])
                 ->with('byUser')
@@ -70,18 +70,18 @@ class VelzonRoutesController extends Controller
                 });
         } else {
             $total_revenue = Payment::where('by_user_id', $user->id)->whereBetween('created_at', [$startDate, $endDate])->sum('amount');
-            $total_followups = Followup::where('by_user_id', $user->id)->whereBetween('created_at', [$startDate, $endDate])->count();
+            $total_visits = Visit::where('by_user_id', $user->id)->whereBetween('created_at', [$startDate, $endDate])->count();
             $total_payments = Payment::where('by_user_id', $user->id)->whereBetween('created_at', [$startDate, $endDate])->count();
             
             $clientIdsFromPayments = Payment::where('by_user_id', $user->id)->pluck('from_user_id')->toArray();
-            $clientIdsFromFollowups = Followup::where('by_user_id', $user->id)->pluck('user_id')->toArray();
-            $clientIds = array_unique(array_merge($clientIdsFromPayments, $clientIdsFromFollowups));
+            $clientIdsFromVisits = Visit::where('by_user_id', $user->id)->pluck('user_id')->toArray();
+            $clientIds = array_unique(array_merge($clientIdsFromPayments, $clientIdsFromVisits));
             
             $total_clients = User::whereIn('id', $clientIds)->whereBetween('created_at', [$startDate, $endDate])->count();
 
             $recent_clients = User::whereIn('id', $clientIds)->whereBetween('created_at', [$startDate, $endDate])->latest()->take(10)->get();
             $recent_payments = Payment::with('fromUser')->where('by_user_id', $user->id)->whereBetween('created_at', [$startDate, $endDate])->latest()->take(10)->get();
-            $recent_followups = Followup::with('client')->where('by_user_id', $user->id)->whereBetween('created_at', [$startDate, $endDate])->latest()->take(10)->get();
+            $recent_visits = Visit::with('client')->where('by_user_id', $user->id)->whereBetween('created_at', [$startDate, $endDate])->latest()->take(10)->get();
         }
 
         foreach($recent_clients as $c) {
@@ -100,12 +100,12 @@ class VelzonRoutesController extends Controller
                 'date' => $p->created_at->toIso8601String()
             ]);
         }
-        foreach($recent_followups as $f) {
+        foreach($recent_visits as $v) {
             $activities->push([
-                'type' => 'followup',
-                'title' => 'Followup Recorded',
-                'description' => 'For ' . ($f->client->name ?? 'Unknown'),
-                'date' => $f->created_at->toIso8601String()
+                'type' => 'visit',
+                'title' => 'Visit Recorded',
+                'description' => 'For ' . ($v->client->name ?? 'Unknown'),
+                'date' => $v->created_at->toIso8601String()
             ]);
         }
 
@@ -114,7 +114,7 @@ class VelzonRoutesController extends Controller
         // Chart Data (Filtered Dates)
         $chartCategories = [];
         $paymentData = [];
-        $followupData = [];
+        $visitData = [];
 
         // Safety check to prevent generating a massive loop if someone passes a 10 year span
         // Limit graph generation to maximum of 90 days.
@@ -129,15 +129,15 @@ class VelzonRoutesController extends Controller
             $chartCategories[] = $date->format('M d');
 
             $paymentQuery = Payment::whereDate('created_at', $dateString);
-            $followupQuery = Followup::whereDate('created_at', $dateString);
+            $visitQuery = Visit::whereDate('created_at', $dateString);
 
             if (!$user->hasRole(['superadmin', 'admin'])) {
                 $paymentQuery->where('by_user_id', $user->id);
-                $followupQuery->where('by_user_id', $user->id);
+                $visitQuery->where('by_user_id', $user->id);
             }
 
             $paymentData[] = $paymentQuery->sum('amount');
-            $followupData[] = $followupQuery->count();
+            $visitData[] = $visitQuery->count();
         }
 
         $chart_data = [
@@ -149,9 +149,9 @@ class VelzonRoutesController extends Controller
                     'data' => $paymentData
                 ],
                 [
-                    'name' => 'Followups',
+                    'name' => 'Visits',
                     'type' => 'line',
-                    'data' => $followupData
+                    'data' => $visitData
                 ]
             ]
         ];
@@ -171,7 +171,7 @@ class VelzonRoutesController extends Controller
         return [
             'total_revenue' => $total_revenue,
             'total_clients' => $total_clients,
-            'total_followups' => $total_followups,
+            'total_visits' => $total_visits,
             'total_payments' => $total_payments,
             'recent_activities' => $recent_activities,
             'chart_data' => $chart_data,

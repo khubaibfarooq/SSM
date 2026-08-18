@@ -19,8 +19,8 @@ const NotificationDropdown = () => {
         setIsNotificationDropdown(!isNotificationDropdown);
     };
 
-    const { upcoming_followups } = usePage().props as any;
-    const followups = upcoming_followups || [];
+    const { upcoming_visits } = usePage().props as any;
+    const visits = upcoming_visits || [];
 
     return (
         <React.Fragment>
@@ -28,7 +28,7 @@ const NotificationDropdown = () => {
                 <Dropdown.Toggle type="button" as="button" className="arrow-none btn btn-icon btn-topbar btn-ghost-secondary rounded-circle">
                     <i className='bx bx-bell fs-22'></i>
                     <span
-                        className="position-absolute topbar-badge fs-10 translate-middle badge rounded-pill bg-danger">{followups.length}<span
+                        className="position-absolute topbar-badge fs-10 translate-middle badge rounded-pill bg-danger">{visits.length}<span
                             className="visually-hidden">unread messages</span></span>
                 </Dropdown.Toggle>
                 <Dropdown.Menu className="dropdown-menu-lg dropdown-menu-end p-0">
@@ -39,7 +39,7 @@ const NotificationDropdown = () => {
                                 <h6 className="m-0 fs-16 fw-semibold text-white"> Notifications </h6>
                             </Col>
                             <div className="col-auto dropdown-tabs">
-                                <span className="badge bg-light-subtle fs-13 text-body"> {followups.length} New</span>
+                                <span className="badge bg-light-subtle fs-13 text-body"> {visits.length} New</span>
                             </div>
                         </Row>
                     </div>
@@ -48,7 +48,7 @@ const NotificationDropdown = () => {
                     <div className="px-2 pt-2 bg-primary bg-pattern ">
                         <Nav className="nav-tabs nav-tabs-custom" role='tablist'>
                             <Nav.Item>
-                                <Nav.Link eventKey="all" as="a"> Followups ({followups.length}) </Nav.Link>
+                                <Nav.Link eventKey="all" as="a"> Visits ({visits.length}) </Nav.Link>
                             </Nav.Item>
                             <Nav.Item>
                                 <Nav.Link eventKey="messages" as="a"> Meassages </Nav.Link>
@@ -64,7 +64,7 @@ const NotificationDropdown = () => {
                         <Tab.Content>
                             <Tab.Pane id="all" eventKey="all" className="py-2 ps-2">
                                 <SimpleBar style={{ maxHeight: "300px" }} className="pe-2">
-                                    {followups.length > 0 ? followups.map((followup: any, index: number) => (
+                                    {visits.length > 0 ? visits.map((visit: any, index: number) => (
                                         <div key={index} className="text-reset notification-item d-block dropdown-item position-relative">
                                             <div className="d-flex">
                                                 <div className="avatar-xs me-3 flex-shrink-0">
@@ -73,29 +73,29 @@ const NotificationDropdown = () => {
                                                     </span>
                                                 </div>
                                                 <div className="flex-grow-1">
-                                                    <Button variant="link" href="/followups" className="stretched-link p-0">
+                                                    <Button variant="link" href="/visits" className="stretched-link p-0">
                                                         <h6 className="mt-0 mb-2 lh-base">
-                                                            Follow-up with <b>{followup.client?.name || 'Unknown'}</b>
+                                                            Visit with <b>{visit.client?.name || 'Unknown'}</b>
                                                         </h6>
                                                     </Button>
                                                     <div className="fs-13 text-muted">
-                                                        <p className="mb-1">Product: <b className="text-success">{followup.client?.product?.name || 'N/A'}</b></p>
+                                                        <p className="mb-1">Product: <b className="text-success">{visit.client?.product?.name || 'N/A'}</b></p>
                                                     </div>
                                                     <p className="mb-0 fs-11 fw-medium text-uppercase text-muted">
-                                                        <span><i className="mdi mdi-clock-outline"></i> {new Date(followup.next_date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
+                                                        <span><i className="mdi mdi-clock-outline"></i> {new Date(visit.next_date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
                                     )) : (
                                         <div className="text-center pb-5 mt-2">
-                                            <h6 className="fs-14 fw-semibold lh-base">No upcoming followups in the next 7 days</h6>
+                                            <h6 className="fs-14 fw-semibold lh-base">No upcoming visits in the next 7 days</h6>
                                         </div>
                                     )}
 
                                     <div className="my-3 text-center">
-                                        <button type="button" className="btn btn-soft-success waves-effect waves-light" onClick={() => window.location.href = '/followups'}>
-                                            View All Followups <i className="ri-arrow-right-line align-middle"></i>
+                                        <button type="button" className="btn btn-soft-success waves-effect waves-light" onClick={() => window.location.href = '/visits'}>
+                                            View All Visits <i className="ri-arrow-right-line align-middle"></i>
                                         </button>
                                     </div>
                                 </SimpleBar>

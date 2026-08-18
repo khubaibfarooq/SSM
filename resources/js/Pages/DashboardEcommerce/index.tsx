@@ -13,7 +13,7 @@ import StoreVisits from './StoreVisits';
 import RecentOrders from './RecentOrders';
 import RecentActivity from './RecentActivity';
 
-export default function Dashboard({ total_revenue, total_clients, total_followups, total_payments, recent_activities, chart_data, filters, is_admin, top_staff, top_clients, sales_by_zones, zones }: any) {
+export default function Dashboard({ total_revenue, total_clients, total_visits, total_payments, recent_activities, chart_data, filters, is_admin, top_staff, top_clients, sales_by_zones, zones }: any) {
 
   const [rightColumn, setRightColumn] = useState<boolean>(false);
   const toggleRightColumn = () => {
@@ -33,7 +33,7 @@ export default function Dashboard({ total_revenue, total_clients, total_followup
                   <Widgets 
                     totalRevenue={total_revenue} 
                     totalClients={total_clients} 
-                    totalFollowups={total_followups} 
+                    totalVisits={total_visits} 
                     totalPayments={total_payments} 
                   />
                 </Row>

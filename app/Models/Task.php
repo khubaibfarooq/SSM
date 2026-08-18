@@ -15,11 +15,16 @@ class Task extends Model
         'assigned_to',
         'assigned_by',
         'status',
-        'due_date'
+        'due_date',
+        'completed_at',
+        'approved_by',
+        'approved_at'
     ];
 
     protected $casts = [
         'due_date' => 'date',
+        'completed_at' => 'datetime',
+        'approved_at' => 'datetime',
     ];
 
     public function assignee()
@@ -30,5 +35,10 @@ class Task extends Model
     public function assigner()
     {
         return $this->belongsTo(User::class, 'assigned_by');
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 }
